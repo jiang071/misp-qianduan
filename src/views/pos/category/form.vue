@@ -9,6 +9,9 @@
     <el-form-item label="类别ID" prop="categoryId">
       <el-input v-model.number="ruleForm.categoryId" />
     </el-form-item>
+    <el-form-item label="类别编号" prop="categorySn">
+      <el-input v-model="ruleForm.categorySn" />
+    </el-form-item>
     <el-form-item label="父级类别" prop="parentId">
       <el-select v-model="ruleForm.parentId" placeholder="请选择父级类别">
         <el-option
@@ -21,6 +24,19 @@
     </el-form-item>
     <el-form-item label="类别名称" prop="categoryName">
       <el-input v-model="ruleForm.categoryName" />
+    </el-form-item>
+    <el-form-item label="类别状态" prop="status">
+      <el-select v-model="ruleForm.status" placeholder="请选择类别状态">
+        <el-option
+          v-for="item in parentCategoryOptions"
+          :key="item.categoryId"
+          :label="item.categoryName"
+          :value="item.categoryId"
+        />
+      </el-select>
+    </el-form-item>
+    <el-form-item label="类别描述" prop="categoryDescription">
+      <el-input v-model="ruleForm.categoryDescription" />
     </el-form-item>
     <el-form-item>
       <el-button type="primary" @click="submitForm(ruleFormRef)">
@@ -64,13 +80,19 @@ interface RuleForm {
   categoryId?: number;
   parentId: number;
   categoryName: string;
+  status: string;
+  categoryDescription?: string;
+  categorySn?: string;
 }
 const ruleFormRef = ref<FormInstance>(); //表单实例
 const ruleForm = reactive<RuleForm>({
   //表单数据
   categoryId: null,
   parentId: 0,
-  categoryName: ""
+  categoryName: "",
+  status: "",
+  categoryDescription: "",
+  categorySn: ""
 });
 
 /** 父级类别下拉框选项列表 */

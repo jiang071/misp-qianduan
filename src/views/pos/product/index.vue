@@ -2,25 +2,25 @@
   <div class="app-container">
     <!-- 数据查询区：表单 -->
     <el-form ref="queryRef" :model="queryParams" :inline="true">
-      <el-form-item label="编码" prop="productSn">
+      <el-form-item label="商品编码" prop="productSn">
         <el-input
           v-model="queryParams.productSn"
-          placeholder="请输入编码"
+          placeholder="请输入商品编码"
           clearable
           style="width: 200px"
           @keyup.enter="handleQuery"
         />
       </el-form-item>
-      <el-form-item label="名称" prop="productName">
+      <el-form-item label="商品名称" prop="productName">
         <el-input
           v-model="queryParams.productName"
-          placeholder="请输入名称"
+          placeholder="请输入商品名称"
           clearable
           style="width: 200px"
           @keyup.enter="handleQuery"
         />
       </el-form-item>
-      <el-form-item label="类别" prop="productCategoryId">
+      <el-form-item label="所属类别" prop="productCategoryId">
         <!-- <el-select v-model="queryParams.productCategoryId" style="width: 200px" placeholder="请选择类别">
                     <el-option v-for="item in categoryOptions" :key="item.categoryId" :label="item.categoryName"
                         :value="item.categoryId" />
@@ -28,7 +28,7 @@
         <el-tree-select
           v-model="queryParams.productCategoryId"
           :data="cateogryTreeOptions"
-          placeholder="请选择类别"
+          placeholder="请选择所属类别"
           :render-after-expand="false"
           style="width: 240px"
         />
@@ -79,27 +79,35 @@
       @selection-change="handleSelectionChange"
     >
       <el-table-column type="selection" width="55" align="center" />
+      <el-table-column
+        label="商品图片"
+        align="center"
+        width="100"
+        prop="productImg"
+      />
       <el-table-column label="ID" align="center" width="100" prop="productId" />
       <el-table-column
-        label="编码"
+        label="商品编码"
         align="center"
         width="200"
         prop="productSn"
       />
       <el-table-column label="名称" align="center" prop="productName" />
       <el-table-column
-        label="类别ID"
-        align="center"
-        width="200"
-        prop="category.categoryId"
-      />
-      <el-table-column
         label="类别"
         align="center"
         width="200"
         prop="category.categoryName"
       />
-      <el-table-column label="价格" align="center" width="200" prop="price" />
+      <el-table-column label="价格" align="center" width="100" prop="price" />
+      <el-table-column label="销量" align="center" width="100" prop="count" />
+      <el-table-column
+        label="剩余库存"
+        align="center"
+        width="100"
+        prop="restock"
+      />
+      <el-table-column label="状态" align="center" width="100" prop="status" />
       <el-table-column
         label="操作"
         align="center"
@@ -148,17 +156,29 @@
 
     <el-drawer v-model="drawer" title="商品信息" :with-header="false">
       <el-descriptions :title="productTitle" :column="2" border>
+        <el-descriptions-item label="商品图片">{{
+          product.imageUrl
+        }}</el-descriptions-item>
         <el-descriptions-item label="编码">{{
           product.productSn
         }}</el-descriptions-item>
         <el-descriptions-item label="名称">{{
           product.productName
         }}</el-descriptions-item>
+        <el-descriptions-item label="类别">{{
+          product.category?.categoryName
+        }}</el-descriptions-item>
         <el-descriptions-item label="价格">{{
           product.price
         }}</el-descriptions-item>
-        <el-descriptions-item label="类别">{{
-          product.category?.categoryName
+        <el-descriptions-item label="销量">{{
+          product.count
+        }}</el-descriptions-item>
+        <el-descriptions-item label="剩余库存">{{
+          product.restock
+        }}</el-descriptions-item>
+        <el-descriptions-item label="状态">{{
+          product.status
         }}</el-descriptions-item>
         <el-descriptions-item label="描述">{{
           product.productDescription
@@ -293,9 +313,18 @@ const responseData = reactive<Product>({
   productName: "",
   price: 0,
   productCategoryId: undefined,
-  category: { categoryId: undefined, parentId: 0, categoryName: "" },
+  category: {
+    categoryId: undefined,
+    parentId: 0,
+    categorySn: "",
+    status: "",
+    categoryName: ""
+  },
   productDescription: "",
   imageUrl: "",
+  count: 0,
+  restock: 0,
+  status: "",
   detailUrl: ""
 });
 

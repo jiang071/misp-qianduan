@@ -36,6 +36,21 @@
       </el-select>
     </el-form-item>
 
+    <el-form-item label="商品状态" prop="status">
+      <el-select
+        v-model="form.status"
+        placeholder="请选择商品状态"
+        style="width: 100%"
+      >
+        <el-option
+          v-for="category in categoryOptions"
+          :key="category.categoryId"
+          :label="category.categoryName"
+          :value="category.categoryId"
+        />
+      </el-select>
+    </el-form-item>
+
     <!-- 商品描述 -->
     <el-form-item label="商品描述" prop="productDescription">
       <el-input
@@ -47,19 +62,10 @@
     </el-form-item>
 
     <!-- 主图URL -->
-    <el-form-item label="主图URL" prop="imageUrl">
+    <el-form-item label="商品图片" prop="imageUrl">
       <el-input v-model="form.imageUrl" placeholder="请输入图片URL">
         <template #append>
           <el-button @click="uploadImage('image')">上传</el-button>
-        </template>
-      </el-input>
-    </el-form-item>
-
-    <!-- 详情图URL -->
-    <el-form-item label="详情图URL" prop="detailUrl">
-      <el-input v-model="form.detailUrl" placeholder="请输入详情图URL">
-        <template #append>
-          <el-button @click="uploadImage('detail')">上传</el-button>
         </template>
       </el-input>
     </el-form-item>
@@ -98,9 +104,14 @@ const product = reactive<Product>({
   category: {
     categoryId: undefined,
     parentId: 0,
+    categorySn: "",
+    status: "",
     categoryName: ""
   },
   imageUrl: "",
+  count: 0,
+  restock: 0,
+  status: "",
   detailUrl: ""
 });
 const form = toRef(product);

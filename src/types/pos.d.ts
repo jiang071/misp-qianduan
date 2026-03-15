@@ -2,6 +2,8 @@
 export interface Category {
   categoryId?: number;
   parentId: number;
+  categorySn: string;
+  status: string;
   categoryName: string;
 }
 
@@ -21,6 +23,9 @@ export interface Product {
   category: Category;
   imageUrl: string;
   detailUrl: string;
+  count: number;
+  restock: number;
+  status: string;
 }
 
 export interface ProductParams {
@@ -35,6 +40,15 @@ export interface ProductQueryParams {
   productName?: string;
   productSn?: string;
   productCategoryId?: number;
+}
+
+export interface CategoryQueryParams {
+  pageNum: number;
+  pageSize: number;
+  categoryName?: string;
+  categorySn?: string;
+  status?: string;
+  parentId?: number;
 }
 
 // 收银
