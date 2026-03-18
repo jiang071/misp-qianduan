@@ -9,34 +9,21 @@
     <el-form-item label="类别ID" prop="categoryId">
       <el-input v-model.number="ruleForm.categoryId" />
     </el-form-item>
-    <el-form-item label="类别编号" prop="categorySn">
-      <el-input v-model="ruleForm.categorySn" />
-    </el-form-item>
-    <el-form-item label="父级类别" prop="parentId">
-      <el-select v-model="ruleForm.parentId" placeholder="请选择父级类别">
-        <el-option
-          v-for="item in parentCategoryOptions"
-          :key="item.categoryId"
-          :label="item.categoryName"
-          :value="item.categoryId"
-        />
-      </el-select>
-    </el-form-item>
     <el-form-item label="类别名称" prop="categoryName">
       <el-input v-model="ruleForm.categoryName" />
     </el-form-item>
-    <el-form-item label="类别状态" prop="status">
-      <el-select v-model="ruleForm.status" placeholder="请选择类别状态">
-        <el-option
-          v-for="item in parentCategoryOptions"
-          :key="item.categoryId"
-          :label="item.categoryName"
-          :value="item.categoryId"
-        />
+    <el-form-item label="类别级别" prop="level">
+      <el-select v-model="ruleForm.level" placeholder="请选择类别级别">
+        <el-option label="第一级" value="1" />
+        <el-option label="第二级" value="2" />
+        <el-option label="第三级" value="3" />
       </el-select>
     </el-form-item>
-    <el-form-item label="类别描述" prop="categoryDescription">
-      <el-input v-model="ruleForm.categoryDescription" />
+    <el-form-item label="类别状态" prop="state">
+      <el-select v-model="ruleForm.state" placeholder="请选择类别状态">
+        <el-option label="上架" value="true" />
+        <el-option label="下架" value="false" />
+      </el-select>
     </el-form-item>
     <el-form-item>
       <el-button type="primary" @click="submitForm(ruleFormRef)">
@@ -80,9 +67,8 @@ interface RuleForm {
   categoryId?: number;
   parentId: number;
   categoryName: string;
-  status: string;
-  categoryDescription?: string;
-  categorySn?: string;
+  state: string;
+  level: number;
 }
 const ruleFormRef = ref<FormInstance>(); //表单实例
 const ruleForm = reactive<RuleForm>({
@@ -90,18 +76,9 @@ const ruleForm = reactive<RuleForm>({
   categoryId: null,
   parentId: 0,
   categoryName: "",
-  status: "",
-  categoryDescription: "",
-  categorySn: ""
+  state: "",
+  level: null
 });
-
-/** 父级类别下拉框选项列表 */
-const parentCategoryOptions = [
-  { categoryId: 0, categoryName: "顶级类别" },
-  { categoryId: 1, categoryName: "类别1" },
-  { categoryId: 2, categoryName: "类别2" },
-  { categoryId: 3, categoryName: "类别3" }
-];
 
 /** 表单验证规则 */
 const rules = reactive<FormRules<RuleForm>>({
@@ -109,7 +86,6 @@ const rules = reactive<FormRules<RuleForm>>({
     { required: true, message: "类别ID不能为空", trigger: "blur" },
     { type: "number", message: "必须为数字值", trigger: "blur" }
   ],
-  parentId: [{ required: true, message: "父级ID不能为空", trigger: "blur" }],
   categoryName: [
     { required: true, message: "类别名称不能为空", trigger: "change" }
   ]

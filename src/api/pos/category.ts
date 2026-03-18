@@ -1,4 +1,5 @@
 import { request } from "@/utils/request";
+import type { Category, CategoryQueryParams } from "@/types/pos";
 
 // 查询所有类别
 export function listCategory() {
@@ -20,5 +21,23 @@ export function getCategoryTree() {
   return request({
     url: "/category/tree",
     method: "get"
+  });  
+}
+
+// 根据条件查询产品
+export function getCategoryByquery(params?: CategoryQueryParams) {
+  return request({
+    url: "/category/list",
+    method: "post",
+    data: params
+  });
+}
+
+// 添加类别
+export function addCategory(data: Category) {
+  return request({
+    url: "/category/add",
+    method: "post",
+    data
   });
 }

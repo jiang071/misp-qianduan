@@ -2,13 +2,14 @@
 export interface Category {
   categoryId?: number;
   parentId: number;
-  categorySn: string;
-  status: string;
+  state: boolean;
   categoryName: string;
+  level: number;
+  path: string;
 }
 
 export interface CategoryTree {
-  lable: string;
+  label: string;
   value: number;
   children?: CategoryTree[];
 }
@@ -46,9 +47,10 @@ export interface CategoryQueryParams {
   pageNum: number;
   pageSize: number;
   categoryName?: string;
-  categorySn?: string;
-  status?: string;
+  categoryId?: number;
+  state?: boolean;
   parentId?: number;
+  level?: number;
 }
 
 // 收银

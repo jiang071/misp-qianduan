@@ -316,9 +316,10 @@ const responseData = reactive<Product>({
   category: {
     categoryId: undefined,
     parentId: 0,
-    categorySn: "",
-    status: "",
-    categoryName: ""
+    categoryName: "",
+    level: 0,
+    state: true,
+    path: ""
   },
   productDescription: "",
   imageUrl: "",

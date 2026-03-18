@@ -1,10 +1,10 @@
 <template>
   <div class="app-container">
     <el-form ref="queryRef" :model="queryParams" :inline="true">
-      <el-form-item label="类别编码" prop="categorySn">
+      <el-form-item label="类别ID" prop="categoryId">
         <el-input
-          v-model="queryParams.categorySn"
-          placeholder="请输入类别编码"
+          v-model="queryParams.categoryId"
+          placeholder="请输入类别ID"
           clearable
           style="width: 150px"
           @keyup.enter="handleQuery"
@@ -19,23 +19,28 @@
           @keyup.enter="handleQuery"
         />
       </el-form-item>
-      <el-form-item label="所属第一级类别" prop="parentId">
-        <el-tree-select
-          v-model="queryParams.parentId"
-          :data="categoryList"
-          placeholder="请选择类别"
-          :render-after-expand="false"
+      <el-form-item label="类别级别" prop="level">
+        <el-select
+          v-model="queryParams.level"
+          placeholder="请选择类别级别"
+          clearable
           style="width: 150px"
-        />
+        >
+          <el-option label="第一级" value="1" />
+          <el-option label="第二级" value="2" />
+          <el-option label="第三级" value="3" />
+        </el-select>
       </el-form-item>
-      <el-form-item label="类别状态" prop="status">
-        <el-tree-select
-          v-model="queryParams.status"
-          :data="categoryList"
+      <el-form-item label="类别状态" prop="state">
+        <el-select
+          v-model="queryParams.state"
           placeholder="请选择类别状态"
-          :render-after-expand="false"
+          clearable
           style="width: 150px"
-        />
+        >
+          <el-option label="上架" value="true" />
+          <el-option label="下架" value="false" />
+        </el-select>
       </el-form-item>
       <el-form-item>
         <el-button type="primary" icon="Search" @click="handleQuery"
@@ -67,58 +72,146 @@
       </el-col>
     </el-row>
     <el-divider />
-    <el-row :gutter="20">
-      <el-table :data="categoryList" style="width: 100%">
-        <el-table-column type="selection" width="55" align="center" />
-        <el-table-column
-          prop="categoryId"
-          label="类别ID"
-          align="center"
-          width="200"
-        />
-        <el-table-column prop="categorySn" label="类别编号" align="center" />
-        <el-table-column prop="categoryName" label="类别名称" align="center" />
-        <el-table-column
-          prop="parentId"
-          label="上级ID"
-          align="center"
-          width="200"
-        />
-        <el-table-column prop="status" label="类别状态" align="center" />
-        <el-table-column
-          label="操作"
-          align="center"
-          class-name="small-padding fixed-width"
-        >
-          <template #default="scope">
-            <el-button
-              link
-              type="primary"
-              icon="View"
-              size="small"
-              @click="handleView(scope.row)"
-              >查看</el-button
-            >
-            <el-button
-              link
-              type="primary"
-              icon="Edit"
-              size="small"
-              @click="handleUpdate(scope.row)"
-              >修改</el-button
-            >
-            <el-button
-              link
-              type="primary"
-              icon="Delete"
-              size="small"
-              @click="handleDelete(scope.row)"
-              >删除</el-button
-            >
-          </template>
-        </el-table-column>
-      </el-table>
-    </el-row>
+
+    <!-- 条件查询时展示基础表格 -->
+    <el-table
+      v-if="isQueryMode"
+      :data="categoryList"
+      row-key="categoryId"
+      style="width: 100%"
+      @selection-change="handleSelectionChange"
+    >
+      <el-table-column type="selection" width="55" align="center" />
+      <el-table-column
+        prop="categoryId"
+        label="类别ID"
+        align="center"
+        width="200"
+      />
+      <el-table-column prop="categoryName" label="类别名称" align="center" />
+      <el-table-column
+        prop="parentId"
+        label="上级ID"
+        align="center"
+        width="200"
+      />
+      <el-table-column
+        prop="level"
+        label="类别层级"
+        align="center"
+        width="150"
+      />
+      <el-table-column prop="state" label="类别状态" align="center" width="150">
+        <template #default="scope">
+          <el-tag :type="scope.row.state ? 'success' : 'danger'">
+            {{ scope.row.state ? "上架" : "下架" }}
+          </el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column
+        label="操作"
+        align="center"
+        class-name="small-padding fixed-width"
+      >
+        <template #default="scope">
+          <el-button
+            link
+            type="primary"
+            icon="View"
+            size="small"
+            @click="handleView(scope.row)"
+            >查看</el-button
+          >
+          <el-button
+            link
+            type="primary"
+            icon="Edit"
+            size="small"
+            @click="handleUpdate(scope.row)"
+            >修改</el-button
+          >
+          <el-button
+            link
+            type="primary"
+            icon="Delete"
+            size="small"
+            @click="handleDelete(scope.row)"
+            >删除</el-button
+          >
+        </template>
+      </el-table-column>
+    </el-table>
+
+    <!-- 无查询条件时展示树形表格 -->
+    <el-table
+      v-else
+      :data="cateogryTreeOptions"
+      :tree-props="{ children: 'children', hasChildren: 'hasChildren' }"
+      row-key="categoryId"
+      default-expand-all
+      style="width: 100%"
+      @selection-change="handleSelectionChange"
+    >
+      <el-table-column type="selection" width="55" align="center" />
+      <el-table-column
+        prop="categoryId"
+        label="类别ID"
+        align="center"
+        width="200"
+      />
+      <el-table-column prop="categoryName" label="类别名称" align="center" />
+      <el-table-column
+        prop="parentId"
+        label="上级ID"
+        align="center"
+        width="200"
+      />
+      <el-table-column
+        prop="level"
+        label="类别层级"
+        align="center"
+        width="150"
+      />
+      <el-table-column prop="state" label="类别状态" align="center" width="150">
+        <template #default="scope">
+          <el-tag :type="scope.row.state ? 'success' : 'danger'">
+            {{ scope.row.state ? "上架" : "下架" }}
+          </el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column
+        label="操作"
+        align="center"
+        class-name="small-padding fixed-width"
+      >
+        <template #default="scope">
+          <el-button
+            link
+            type="primary"
+            icon="View"
+            size="small"
+            @click="handleView(scope.row)"
+            >查看</el-button
+          >
+          <el-button
+            link
+            type="primary"
+            icon="Edit"
+            size="small"
+            @click="handleUpdate(scope.row)"
+            >修改</el-button
+          >
+          <el-button
+            link
+            type="primary"
+            icon="Delete"
+            size="small"
+            @click="handleDelete(scope.row)"
+            >删除</el-button
+          >
+        </template>
+      </el-table-column>
+    </el-table>
 
     <!-- 数据展示区：分页加载 -->
     <el-pagination
@@ -134,20 +227,23 @@
 
     <el-drawer v-model="drawer" title="类别信息" :with-header="false">
       <el-descriptions title="查看类别信息" :column="2" border>
-        <el-descriptions-item label="类别编码">{{
-          category.categorySn
+        <el-descriptions-item label="类别ID">{{
+          category.categoryId
         }}</el-descriptions-item>
         <el-descriptions-item label="类别名称">{{
           category.categoryName
         }}</el-descriptions-item>
-        <el-descriptions-item label="所属第一级类别">{{
+        <el-descriptions-item label="所属上一类别">{{
           category.parentId
         }}</el-descriptions-item>
-        <el-descriptions-item label="状态">{{
-          category.status
+        <el-descriptions-item label="上级类别名称">{{
+          parentCategoryNames
         }}</el-descriptions-item>
-        <el-descriptions-item label="描述">{{
-          category.categoryDescription
+        <el-descriptions-item label="状态">{{
+          category.state ? "上架" : "下架"
+        }}</el-descriptions-item>
+        <el-descriptions-item label="类别层级">{{
+          category.level
         }}</el-descriptions-item>
       </el-descriptions>
     </el-drawer>
@@ -161,17 +257,22 @@
 <script setup lang="ts">
 import { ElMessage, ElMessageBox } from "element-plus";
 import type { FormInstance } from "element-plus";
-import { ref, reactive, toRef } from "vue";
+import { ref, reactive, toRef, computed } from "vue";
 import { onMounted } from "vue";
 import CategoryForm from "./form.vue";
 // 导入api接口
-import { listCategory, getCategoryById } from "@/api/pos/category";
+import {
+  listCategory,
+  getCategoryById,
+  getCategoryTree,
+  getCategoryByquery
+} from "@/api/pos/category";
 
-import { CategoryQueryParams } from "@/types/pos";
-import { pa } from "element-plus/es/locale/index.mjs";
+import { CategoryQueryParams, CategoryTree } from "@/types/pos";
 
 onMounted(() => {
-  getCategoryList();
+  getCategoryTreeOptions();
+  loadAllCategoryData();
 });
 
 interface Category {
@@ -179,58 +280,95 @@ interface Category {
   parentId: number;
   categoryName: string;
   categorySn: string;
-  status: string;
+  state: boolean;
+  level: number;
+  path: string;
   categoryDescription?: string;
+  children?: Category[];
+  hasChildren?: boolean;
+  status?: string;
 }
 const categoryList = ref<Category[]>([]);
-
+const allCategoryData = ref<Category[]>([]);
 const dialogOpen = ref(false); // 对话框 v-model
 const title = ref(""); // 对话框 v-bind
 const ids = ref<number[]>([]); // 表单勾选的id
 const categoryId = ref(0);
 const total = ref<number>(0); // table数据总数
+const cateogryTreeOptions = ref<CategoryTree[]>([]);
+const drawer = ref<boolean>(false);
+const selectedId = ref<number | undefined>();
+const isQueryMode = ref<boolean>(false);
 // 查询
 const queryRef = ref<FormInstance>();
 const query = reactive<CategoryQueryParams>({
   pageNum: 1,
   pageSize: 10,
-  categorySn: undefined,
+  categoryId: undefined,
   categoryName: undefined,
-  status: undefined,
-  parentId: undefined
+  state: undefined,
+  level: undefined
 });
 const queryParams = toRef(query);
+
+// 处理表格选中事件
+const handleSelectionChange = (val: Category[]) => {
+  ids.value = val.map(item => item.categoryId);
+};
+
 // 数据查询区--> 查询按钮
 function handleQuery() {
-  queryParams.value.pageNum = 1;
-  getCategoryList();
-  ElMessage.success(JSON.stringify(queryParams.value));
+  // 标记为查询模式
+  isQueryMode.value = true;
+  getCategoryByquery(queryParams.value)
+    .then(response => {
+      categoryList.value = response.data.list || [];
+      total.value = response.data.total || 0;
+      ElMessage.success("查询成功");
+    })
+    .catch(err => {
+      ElMessage.error("查询失败：" + err.message);
+    });
 }
 // 数据查询区--> 重置按钮
 const resetQuery = (formEl: FormInstance | undefined) => {
   if (!formEl) return;
   formEl.resetFields();
-  getCategoryList();
+  isQueryMode.value = false;
+  // 重新加载树形数据
+  getCategoryTreeOptions();
+  // 重置分页参数
+  queryParams.value.pageNum = 1;
+  queryParams.value.pageSize = 10;
+  total.value = 0;
 };
+function getCategoryTreeOptions() {
+  getCategoryTree().then(response => {
+    cateogryTreeOptions.value = response.data;
+    total.value = response.data.length;
+  });
+}
 
 /** 获取类别列表 */
 function getCategoryList() {
   listCategory().then(res => {
-    console.log(res);
     categoryList.value = res.data;
+    total.value = res.data.length;
   });
 }
 
 /** 查看按钮 */
-const drawer = ref<boolean>(false);
 const responseData = reactive<Category>({
   categoryId: undefined,
   categorySn: "",
   categoryName: "",
-  status: "",
+  state: false,
   parentId: undefined,
-  categoryDescription: ""
+  categoryDescription: "",
+  level: 0,
+  path: ""
 });
+
 const category = toRef(responseData);
 function handleView(row: Category) {
   if (row.categoryId !== undefined) {
@@ -240,19 +378,56 @@ function handleView(row: Category) {
     drawer.value = true;
   }
 }
+
+// 计算属性：解析path并拼接上级类别名称
+const parentCategoryNames = computed(() => {
+  if (!category.value.path) return "无";
+  // 解析path为ID数组，过滤0（根节点）和当前类别ID
+  const pathIds = category.value.path
+    .split(",")
+    .map(Number)
+    .filter(id => id > 0 && id !== category.value.categoryId);
+  if (pathIds.length === 0) return "无";
+  // 匹配ID对应的名称
+  const names = pathIds.map(id => {
+    const item = allCategoryData.value.find(cate => cate.categoryId === id);
+    return item ? item.categoryName : `未知(${id})`;
+  });
+  return names.join(" > "); // 拼接成 "一级 > 二级" 格式
+});
+
+// 加载全量类别数据（用于匹配ID和名称）
+function loadAllCategoryData() {
+  listCategory()
+    .then(res => {
+      allCategoryData.value = res.data || [];
+    })
+    .catch(err => {
+      ElMessage.error("加载全量类别数据失败：" + err.message);
+    });
+}
+
 /** ------------------数据展示区：分页加载-------------------- */
 // 分页--> 修改每页数据数（5｜10｜20｜30）
 function handleSizeChange(val: number) {
   queryParams.value.pageSize = val;
-  getCategoryList();
+  if (isQueryMode.value) {
+    handleQuery();
+  } else {
+    getCategoryList();
+  }
 }
 
 //分页--> 修改当前页
 function handleCurrentChange(val: number) {
   queryParams.value.pageNum = val;
-  getCategoryList();
+  if (isQueryMode.value) {
+    handleQuery();
+  } else {
+    getCategoryList();
+  }
 }
-const selectedId = ref<number | undefined>();
+
 /** 新增按钮 */
 function handleAdd() {
   dialogOpen.value = true;
@@ -261,7 +436,7 @@ function handleAdd() {
 
 /** 修改按钮 */
 function handleUpdate(row: any) {
-  selectedId.value = row.productId || ids.value[0];
+  selectedId.value = row.categoryId || ids.value[0];
   title.value = "修改商品[" + selectedId.value + "]";
   dialogOpen.value = true;
 }
