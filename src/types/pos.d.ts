@@ -35,6 +35,7 @@ export interface ProductQueryParams {
   productName?: string;
   productSn?: string;
   productCategoryId?: number;
+  secondCategoryId?: number;
 }
 
 // 收银

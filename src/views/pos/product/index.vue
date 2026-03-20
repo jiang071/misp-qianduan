@@ -20,7 +20,7 @@
           @keyup.enter="handleQuery"
         />
       </el-form-item>
-      <el-form-item label="类别" prop="productCategoryId">
+      <el-form-item label="一级类别" prop="productCategoryId">
         <!-- <el-select v-model="queryParams.productCategoryId" style="width: 200px" placeholder="请选择类别">
                     <el-option v-for="item in categoryOptions" :key="item.categoryId" :label="item.categoryName"
                         :value="item.categoryId" />
@@ -28,10 +28,26 @@
         <el-tree-select
           v-model="queryParams.productCategoryId"
           :data="cateogryTreeOptions"
-          placeholder="请选择类别"
+          placeholder="请选择一级类别"
           :render-after-expand="false"
-          style="width: 240px"
+          style="width: 200px"
         />
+      </el-form-item>
+      <el-form-item label="二级类别" prop="secondCategoryId">
+        <el-select
+          v-model="queryParams.secondCategoryId"
+          placeholder="请先选择一级类别"
+          style="width: 200px"
+          :disabled="!queryParams.productCategoryId"
+          clearable
+        >
+          <!-- <el-option
+            v-model="item in secondCategoryId"
+            :key="item.categoryId"
+            :label="item.categoryName"
+            :value="item.categoryId"
+          /> -->
+        </el-select>
       </el-form-item>
       <el-form-item>
         <el-button type="primary" icon="Search" @click="handleQuery"
@@ -222,7 +238,8 @@ const query = reactive<ProductQueryParams>({
   pageSize: 10,
   productSn: undefined,
   productName: undefined,
-  productCategoryId: undefined
+  productCategoryId: undefined,
+  secondCategoryId: undefined
 });
 const queryParams = toRef(query);
 // 数据查询区--> 查询按钮

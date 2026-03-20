@@ -13,22 +13,34 @@
       <el-input v-model="form.productSn" placeholder="请输入商品编号" />
     </el-form-item>
     <el-form-item label="商品价格" prop="price">
-      <el-input-number
+      <el-input
         v-model="form.price"
-        :step="1"
-        :min="0"
         style="width: 100%"
         placeholder="请输入商品价格"
       />
     </el-form-item>
-    <el-form-item label="商品分类" prop="productCategoryId">
+    <el-form-item label="一级分类" prop="productCategoryId">
       <el-select
         v-model="form.productCategoryId"
-        placeholder="请选择商品分类"
+        placeholder="请选择商品一级分类"
         style="width: 100%"
       >
         <el-option
           v-for="category in categoryOptions"
+          :key="category.categoryId"
+          :label="category.categoryName"
+          :value="category.categoryId"
+        />
+      </el-select>
+    </el-form-item>
+    <el-form-item label="二级分类" prop="productCategoryId">
+      <el-select
+        v-model="form.productCategoryId"
+        placeholder="请选择商品二级分类"
+        style="width: 100%"
+      >
+        <el-option
+          v-for="category in secondCategoryOptions"
           :key="category.categoryId"
           :label="category.categoryName"
           :value="category.categoryId"
@@ -106,6 +118,7 @@ const product = reactive<Product>({
 const form = toRef(product);
 const ruleFormRef = ref<FormInstance>();
 const categoryOptions = ref<Category[]>([]);
+const secondCategoryOptions = ref<Category[]>([]);
 
 // 表单校验规则
 const rules = reactive<FormRules<Product>>({
@@ -119,7 +132,16 @@ const rules = reactive<FormRules<Product>>({
   ],
   price: [
     { required: true, message: "请输入商品价格", trigger: "blur" },
-    { type: "number", min: 0, message: "价格必须大于 0", trigger: "blur" }
+    {
+      validator: (rule: any, value: any, callback: any) => {
+        if (value && Number(value) <= 0) {
+          callback(new Error("价格必须大于0"));
+        } else {
+          callback();
+        }
+      },
+      trigger: "blur"
+    }
   ],
   productCategoryId: [
     { required: true, message: "请选择商品分类", trigger: "change" }
