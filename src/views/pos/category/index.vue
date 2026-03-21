@@ -247,9 +247,19 @@
         }}</el-descriptions-item>
       </el-descriptions>
     </el-drawer>
-    <el-dialog v-model="dialogOpen" :title="title" width="500">
+    <el-dialog
+      v-model="dialogOpen"
+      :title="title"
+      width="500"
+      @close="resetDialog"
+    >
       <!-- 也可以写成 <CateogryForm /> -->
-      <category-form :category-id="categoryId" />
+      <category-form
+        v-if="dialogOpen"
+        :category-id="categoryId"
+        @close="dialogOpen = false"
+        @refresh="refreshCategoryList"
+      />
     </el-dialog>
   </div>
 </template>
@@ -265,7 +275,9 @@ import {
   listCategory,
   getCategoryById,
   getCategoryTree,
-  getCategoryByquery
+  getCategoryByquery,
+  deleteCategory,
+  deleteCategoryBatch
 } from "@/api/pos/category";
 
 import { CategoryQueryParams, CategoryTree } from "@/types/pos";
@@ -430,32 +442,77 @@ function handleCurrentChange(val: number) {
 
 /** 新增按钮 */
 function handleAdd() {
+  resetDialog();
   dialogOpen.value = true;
   title.value = "新增类别";
 }
 
+function refreshCategoryList() {
+  if (isQueryMode.value) {
+    handleQuery(); // 条件查询模式：重新执行查询
+  } else {
+    getCategoryTreeOptions(); // 树形模式：重新加载树形数据
+    loadAllCategoryData(); // 刷新全量数据（用于查看时匹配上级名称）
+  }
+}
+
+/** 重置弹窗状态 */
+function resetDialog() {
+  categoryId.value = null;
+  title.value = "新增类别";
+}
+
 /** 修改按钮 */
-function handleUpdate(row: any) {
-  selectedId.value = row.categoryId || ids.value[0];
-  title.value = "修改商品[" + selectedId.value + "]";
+function handleUpdate(row?: any) {
+  // 优先取行数据的ID，其次取选中的ID（批量修改）
+  const targetId = row?.categoryId || ids.value[0];
+  if (!targetId) {
+    ElMessage.warning("请选择要修改的类别");
+    return;
+  }
+  categoryId.value = targetId; // 传递给子组件的ID
+  title.value = `修改类别`;
   dialogOpen.value = true;
 }
 
 /** 删除按钮 */
-function handleDelete(row: any) {
-  ElMessageBox.confirm("是否删除数据?", "警告", {
-    confirmButtonText: "是",
-    cancelButtonText: "否",
-    type: "warning"
-  })
-    .then(() => {
-      ElMessage({ type: "success", message: "删除成功" });
+/** 删除按钮 */
+function handleDelete(row?: any) {
+  // 确定要删除的ID集合：优先取行数据（单删），其次取选中的ID数组（批删）
+  const deleteIds = row?.categoryId ? [row.categoryId] : ids.value;
+
+  // 校验：无选中数据时提示
+  if (deleteIds.length === 0) {
+    ElMessage.warning("请选择要删除的类别");
+    return;
+  }
+
+  ElMessageBox.confirm(
+    `是否确认删除${deleteIds.length > 1 ? "选中的" : ""}类别数据？`,
+    "警告",
+    {
+      confirmButtonText: "是",
+      cancelButtonText: "否",
+      type: "warning"
+    }
+  )
+    .then(async () => {
+      try {
+        if (deleteIds.length === 1) {
+          // 单条删除：调用原接口
+          await deleteCategory(deleteIds[0]);
+        } else {
+          // 批量删除：调用批量删除接口
+          await deleteCategoryBatch(deleteIds);
+        }
+        ElMessage({ type: "success", message: "删除成功" });
+        refreshCategoryList(); // 刷新列表
+      } catch (err: any) {
+        ElMessage.error(`删除失败：${err.message || "服务器错误"}`);
+      }
     })
     .catch(() => {
-      ElMessage({
-        type: "info",
-        message: "取消删除"
-      });
+      ElMessage({ type: "info", message: "取消删除" });
     });
 }
 

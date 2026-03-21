@@ -27,9 +27,9 @@ export default ({ mode }: ConfigEnv): UserConfigExport => {
       proxy: {
         "/api": {
           // 这里填写后端地址
-          target: "http://172.20.10.4:8081/",
-          changeOrigin: true,
-          rewrite: path => path.replace(/^\/api/, "")
+          target: "http://192.168.43.150/",
+          changeOrigin: true
+          // rewrite: path => path.replace(/^\/api/, "")
         }
       },
       // 预热文件以提前转换和缓存结果，降低启动期间的初始页面加载时长并防止转换瀑布

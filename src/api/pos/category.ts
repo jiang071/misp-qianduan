@@ -21,7 +21,7 @@ export function getCategoryTree() {
   return request({
     url: "/category/tree",
     method: "get"
-  });  
+  });
 }
 
 // 根据条件查询产品
@@ -38,6 +38,32 @@ export function addCategory(data: Category) {
   return request({
     url: "/category/add",
     method: "post",
+    data
+  });
+}
+
+//删除类别
+export function deleteCategory(categoryId: number) {
+  return request({
+    url: "/category/delete/" + categoryId,
+    method: "delete"
+  });
+}
+
+// 批量删除类别
+export function deleteCategoryBatch(data: number[]) {
+  return request({
+    url: "/category/batchDelete",
+    method: "delete",
+    data
+  });
+}
+
+// 更新类别
+export function updateCategory(data: Category) {
+  return request({
+    url: "/category/update",
+    method: "put",
     data
   });
 }
