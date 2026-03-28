@@ -16,6 +16,22 @@
             </div>
           </template>
           <el-form :model="enterItemForm" label-width="auto">
+            <el-form-item label="商品分类">
+              <el-tree-select
+                ref="categoryTreeRef"
+                v-model="queryParams.productCategoryId"
+                style="width: 200px"
+                :data="categoryTreeOptions"
+                :props="{
+                  label: 'categoryName',
+                  value: 'categoryId',
+                  children: 'children'
+                }"
+                placeholder="请选择产品类别"
+                :render-after-expand="false"
+                @change="handleCategoryChange"
+              />
+            </el-form-item>
             <el-form-item label="商品编码">
               <el-select
                 v-model="enterItemForm.itemSn"
@@ -94,6 +110,14 @@
         >
           <template #extra>
             <el-button
+              type="info"
+              size="default"
+              :disabled="step !== 0"
+              style="margin-right: 10px"
+              @click="handleGetPurchaser"
+              >GET PURCHASER</el-button
+            >
+            <el-button
               type="success"
               :disabled="!(step === 0 || step === 4)"
               @click="handleMakeNewSale"
@@ -171,8 +195,9 @@
             :row-class-name="tableRowClassName"
           >
             <el-table-column prop="index" label="序号" width="100" />
-            <el-table-column prop="itemSn" label="商品编码" width="180" />
+            <el-table-column prop="itemSn" label="商品选择" width="180" />
             <el-table-column prop="productName" label="商品名称" width="180" />
+            <el-table-column prop="category" label="商品分类" width="180" />
             <el-table-column prop="price" label="销售价格" width="180" />
             <el-table-column prop="quantity" label="订购数量" width="200">
               <template #default="scope">
@@ -229,6 +254,54 @@ import {
 
 // 控制业务步骤
 const step = ref(0);
+const queryParams = ref({
+  productCategoryId: undefined as number | undefined
+});
+
+// 商品分类树（三级）模拟数据，后续需要接新接口
+const categoryTreeOptions = ref([
+  {
+    categoryId: 1,
+    categoryName: "食品饮料",
+    children: [
+      {
+        categoryId: 11,
+        categoryName: "休闲零食",
+        children: [
+          { categoryId: 111, categoryName: "膨化食品" },
+          { categoryId: 112, categoryName: "糖果巧克力" }
+        ]
+      },
+      {
+        categoryId: 12,
+        categoryName: "酒水饮料",
+        children: [
+          { categoryId: 121, categoryName: "碳酸饮料" },
+          { categoryId: 122, categoryName: "茶饮咖啡" }
+        ]
+      }
+    ]
+  },
+  {
+    categoryId: 2,
+    categoryName: "日用百货",
+    children: [
+      {
+        categoryId: 21,
+        categoryName: "洗护用品",
+        children: [
+          { categoryId: 211, categoryName: "洗发水" },
+          { categoryId: 212, categoryName: "沐浴露" }
+        ]
+      }
+    ]
+  }
+]);
+
+// 分类切换事件
+const handleCategoryChange = (val: number | undefined) => {
+  console.log("选中分类ID：", val);
+};
 
 /*** =======第一步:开始一次新的销售 ======= */
 import type { Sale } from "@/types/pos";
@@ -258,6 +331,17 @@ function initData() {
   totalQuantity.value = 0;
   step.value = 0;
 }
+// ===================== 预留：获取购买者/会员信息接口 =====================
+const handleGetPurchaser = () => {
+  ElMessage.info("正在调用获取购买者信息接口...");
+
+  // ========== 在这里写你的接口调用逻辑 ==========
+  // getPurchaserInfo().then(res => {
+  //   customerName.value = res.data.userName;
+  //   ElMessage.success("获取会员信息成功");
+  // })
+};
+
 // 开始新的销售
 function handleMakeNewSale() {
   initData();

@@ -94,3 +94,22 @@ export interface MakePaymentForm {
   cashTendered: number;
   changeDue?: number;
 }
+
+export interface OrderQueryParams {
+  pageNum: number;
+  pageSize: number;
+  orderSn?: string;
+  payUserName?: string;
+  orderStatus?: string;
+}
+
+export interface Order {
+  orderId?: number;
+  orderSn?: string;
+  payUserName?: string;
+  payAmount?: number;
+  orderStatus?: string;
+  payTime?: string;
+  createTime?: string;
+  remark?: string;
+}
