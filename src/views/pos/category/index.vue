@@ -117,6 +117,6 @@ function handleExport() {
 </script>
 
 <style>
-@media (min-width: 1024px) {
+@media (width >= 1024px) {
 }
 </style>
