@@ -52,7 +52,7 @@ export default [
         component: () => import("@/views/pos/payment/index.vue"),
         meta: {
           icon: "ep:money",
-          title: "订单支付"
+          title: "订单管理"
         }
       }
     ]

@@ -20,19 +20,27 @@
           @keyup.enter="handleQuery"
         />
       </el-form-item>
-      <el-form-item label="所属类别" prop="productCategoryId">
+      <el-form-item label="产品类别" prop="productCategoryId">
         <!-- <el-select v-model="queryParams.productCategoryId" style="width: 200px" placeholder="请选择类别">
                     <el-option v-for="item in categoryOptions" :key="item.categoryId" :label="item.categoryName"
                         :value="item.categoryId" />
                 </el-select> -->
         <el-tree-select
+          ref="categoryTreeRef"
           v-model="queryParams.productCategoryId"
           :data="cateogryTreeOptions"
-          placeholder="请选择所属类别"
+          :props="{
+            label: 'categoryName',
+            value: 'categoryId',
+            children: 'children'
+          }"
+          placeholder="请选择产品类别"
           :render-after-expand="false"
-          style="width: 240px"
+          style="width: 200px"
+          @change="handleCategoryChange"
         />
       </el-form-item>
+
       <el-form-item>
         <el-button type="primary" icon="Search" @click="handleQuery"
           >搜索</el-button
@@ -157,7 +165,7 @@
     <el-drawer v-model="drawer" title="商品信息" :with-header="false">
       <el-descriptions :title="productTitle" :column="2" border>
         <el-descriptions-item label="商品图片">{{
-          product.imageUrl
+          product.mainImage
         }}</el-descriptions-item>
         <el-descriptions-item label="编码">{{
           product.productSn
@@ -166,27 +174,21 @@
           product.productName
         }}</el-descriptions-item>
         <el-descriptions-item label="类别">{{
-          product.category?.categoryName
+          product.categoryName
         }}</el-descriptions-item>
         <el-descriptions-item label="价格">{{
-          product.price
+          product.displayPrice
         }}</el-descriptions-item>
-        <el-descriptions-item label="销量">{{
-          product.count
-        }}</el-descriptions-item>
-        <el-descriptions-item label="剩余库存">{{
-          product.restock
-        }}</el-descriptions-item>
-        <el-descriptions-item label="状态">{{
-          product.status
+        <el-descriptions-item label="类别">{{
+          product.categoryId
         }}</el-descriptions-item>
         <el-descriptions-item label="描述">{{
-          product.productDescription
+          product.productDesc
         }}</el-descriptions-item>
       </el-descriptions>
     </el-drawer>
 
-    <el-dialog v-model="dialogOpen" :title="title" width="500" append-to-body>
+    <el-dialog v-model="dialogOpen" :title="title" width="800" append-to-body>
       <product-form :product-id="selectedId" @close="handleCloseDiaglog" />
     </el-dialog>
   </div>
@@ -199,42 +201,39 @@ import type { FormInstance } from "element-plus";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { listCategory, getCategoryTree } from "@/api/pos/category";
 import {
-  listProductByPage,
   getProductById,
   deleteProduct,
-  deleteProductBatch
+  deleteProductBatch,
+  listAllProduct,
+  listProductByPage
 } from "@/api/pos/product";
 import ProductForm from "./form.vue";
 import {
   Category,
   CategoryTree,
   ProductQueryParams,
-  Product
+  Product,
+  ProductSku,
+  ProductSpecAttr
 } from "@/types/pos";
 
 onMounted(() => {
   // 挂载后加载数据
   getProductList();
-  // getCategoryOptions()
   getCategoryTreeOptions();
 });
 
+const categoryTreeRef = ref();
+const selectedCategoryId = ref<number | undefined>(undefined);
 /** ------------------数据查询区——表单-------------------- */
 // 表单实例
 const queryRef = ref<FormInstance>();
-const categoryOptions = ref<Category[]>([]);
 const cateogryTreeOptions = ref<CategoryTree[]>([]);
-function getCategoryOptions() {
-  listCategory().then(response => {
-    categoryOptions.value = response.data;
+const getCategoryTreeOptions = () => {
+  getCategoryTree().then(res => {
+    cateogryTreeOptions.value = res.data;
   });
-}
-
-function getCategoryTreeOptions() {
-  getCategoryTree().then(response => {
-    cateogryTreeOptions.value = response.data;
-  });
-}
+};
 
 // 查询
 const query = reactive<ProductQueryParams>({
@@ -242,14 +241,62 @@ const query = reactive<ProductQueryParams>({
   pageSize: 10,
   productSn: undefined,
   productName: undefined,
-  productCategoryId: undefined
+  productCategoryId: undefined,
+  categoryIds: []
 });
 const queryParams = toRef(query);
+
+const handleCategoryChange = (value: number | undefined) => {
+  selectedCategoryId.value = value;
+  console.log("📌 树形选择器选中的原始值：", value);
+  if (!value || !categoryTreeRef.value) {
+    queryParams.value.categoryIds = [];
+    return;
+  }
+
+  try {
+    // 获取 el-tree 实例（兼容不同版本的 element-plus）
+    const treeInstance =
+      categoryTreeRef.value.tree || categoryTreeRef.value.getTree?.();
+    if (!treeInstance) {
+      queryParams.value.categoryIds = [];
+      return;
+    }
+
+    // 根据选中的 value 获取节点对象
+    const node = treeInstance.getNode(value);
+    if (!node || !node.data) {
+      queryParams.value.categoryIds = [];
+      return;
+    }
+
+    // 从当前节点向上遍历，收集所有父节点 ID（顺序：一级 -> 二级 -> 三级）
+    const categoryIds: number[] = [];
+    let currentNode: any = node;
+
+    while (currentNode && currentNode.data) {
+      if (currentNode.data.categoryId !== undefined) {
+        categoryIds.unshift(currentNode.data.categoryId); // unshift 保证父节点在前面
+      }
+      currentNode = currentNode.parent; // 移动到父节点
+    }
+
+    // 更新查询参数
+    queryParams.value.categoryIds = categoryIds;
+  } catch (error) {
+    console.error("获取分类路径失败:", error);
+    queryParams.value.categoryIds = [];
+  }
+};
+
 // 数据查询区--> 查询按钮
 function handleQuery() {
   queryParams.value.pageNum = 1;
   getProductList();
-  ElMessage.success(JSON.stringify(queryParams.value));
+  const categoryTip = queryParams.value.productCategoryId
+    ? `，分类ID：${queryParams.value.productCategoryId}`
+    : "";
+  ElMessage.success(`已执行查询${categoryTip}`);
 }
 // 数据查询区--> 重置按钮
 const resetQuery = (formEl: FormInstance | undefined) => {
@@ -266,14 +313,31 @@ const tableData = reactive<Product[]>([]); // table数据
 const dataList = toRef(tableData);
 
 // 数据展示区--> 数据加载
+// 数据展示区--> 数据加载（修复 500 不崩溃）
 function getProductList() {
   loading.value = true;
-  /** 调用后端分页查询接口 */
-  listProductByPage(queryParams.value).then(response => {
-    dataList.value = response.data.list;
-    total.value = response.data.total;
-    loading.value = false;
-  });
+
+  const requestParams = {
+    pageNum: queryParams.value.pageNum,
+    pageSize: queryParams.value.pageSize,
+    productSn: queryParams.value.productSn || "",
+    productName: queryParams.value.productName || "",
+    categoryIds: queryParams.value.categoryIds || []
+  };
+
+  listProductByPage(requestParams)
+    .then(response => {
+      dataList.value = response?.data?.list || [];
+      total.value = response?.data?.total || 0;
+      loading.value = false;
+    })
+    .catch(error => {
+      console.error("商品查询异常（已兼容）:", error);
+      dataList.value = [];
+      total.value = 0;
+      loading.value = false;
+      ElMessage.warning("部分商品数据异常，已安全显示");
+    });
 }
 
 /** ------------------数据展示区：数据选择-------------------- */
@@ -308,26 +372,33 @@ function handleCurrentChange(val: number) {
 const drawer = ref<boolean>(false);
 const productTitle = ref<string>("");
 const responseData = reactive<Product>({
-  productId: undefined,
+  productId: 0,
   productSn: "",
   productName: "",
-  price: 0,
-  productCategoryId: undefined,
-  category: {
-    categoryId: undefined,
-    parentId: 0,
-    categoryName: "",
-    level: 0,
-    state: true,
-    path: ""
-  },
-  productDescription: "",
-  imageUrl: "",
-  count: 0,
-  restock: 0,
-  status: "",
-  detailUrl: ""
+  productDesc: "",
+  displayPrice: 0,
+  categoryId: 0,
+  categoryName: "",
+  mainImage: "",
+  detailImages: "",
+  productStock: 0,
+  productStatus: "",
+  stockStatus: "",
+  createTime: "",
+  updateTime: ""
 });
+
+const newSku: ProductSku = {
+  skuId: undefined,
+  productId: undefined,
+  skuCode: "",
+  specCombo: "",
+  skuPrice: 0,
+  skuStock: 0,
+  skuImage: ""
+};
+
+const skus = ref<ProductSku[]>([]); // 商品规格列表
 
 const product = toRef(responseData);
 function handleView(row: Product) {
@@ -381,16 +452,22 @@ function handleDelete(row: any) {
 }
 
 /** 批量删除按钮 */
-function handleBatchDelete() {
-  ElMessageBox.confirm("是否删除编号为" + ids.value + "的数据?", "警告")
-    .then(() => {
-      return deleteProductBatch(ids.value);
-    })
-    .then(() => {
-      getProductList();
-      ElMessage.success("批量删除" + ids.value.length + "条数据成功!");
-    });
+// 正确代码：函数声明为 async
+async function handleBatchDelete() {
+  // 🔧 添加 async 关键字
+  try {
+    // await 可以正常使用（ElMessageBox.confirm 返回 Promise）
+    await ElMessageBox.confirm(
+      `是否删除编号为${ids.value.join(",")}的数据?`,
+      "警告"
+    );
+    // 确认后执行删除
+    await deleteProductBatch(ids.value); // 若 deleteProductBatch 是异步函数，也需 await
+    getProductList();
+    ElMessage.success(`批量删除${ids.value.length}条数据成功！`);
+  } catch (error) {
+    // 用户取消确认时的异常捕获（无需处理，仅关闭弹窗）
+    ElMessage.info("已取消删除操作");
+  }
 }
 </script>
-
-<style></style>

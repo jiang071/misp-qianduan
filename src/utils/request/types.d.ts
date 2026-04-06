@@ -2,7 +2,7 @@ import type { RequestMethods, PureHttpRequestConfig } from "@/utils/http/types";
 
 export type ApiResult = {
   code: number;
-  msg: string;
+  message: string;
   data?: any;
 };
 
