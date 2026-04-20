@@ -16,43 +16,22 @@
             </div>
           </template>
           <el-form :model="enterItemForm" label-width="auto">
-            <el-form-item label="商品分类">
-              <el-tree-select
-                ref="categoryTreeRef"
-                v-model="queryParams.productCategoryId"
-                style="width: 200px"
-                :data="categoryTreeOptions"
-                :props="{
-                  label: 'categoryName',
-                  value: 'categoryId',
-                  children: 'children'
-                }"
-                placeholder="请选择产品类别"
-                :render-after-expand="false"
-                @change="handleCategoryChange"
-              />
-            </el-form-item>
             <el-form-item label="商品编码">
-              <el-select
+              <el-input
                 v-model="enterItemForm.itemSn"
-                placeholder="请选择商品"
-              >
-                <el-option
-                  v-for="item in productOptions"
-                  :key="item.productSn"
-                  :label="item.productName"
-                  :value="item.productSn"
-                />
-              </el-select>
+                placeholder="请输入商品编号"
+                @input="handleItemSnInput"
+              />
             </el-form-item>
             <el-form-item label="订购数量">
               <el-input-number
                 v-model="enterItemForm.quantity"
                 :min="1"
-                :max="10"
                 controls-position="right"
-                @change="handleChange"
               />
+              <div v-if="skuStock > -1" class="sku-stock-tip">
+                当前库存：{{ skuStock }} 件
+              </div>
             </el-form-item>
             <el-form-item>
               <el-button
@@ -79,25 +58,31 @@
               <span>订单支付</span>
             </div>
           </template>
-
-          <el-form :model="makePaymentForm" label-width="auto">
-            <el-form-item label="付款金额">
-              <el-input v-model="makePaymentForm.cashTendered" />
-            </el-form-item>
-            <el-form-item label="找零">
-              <el-input v-model="makePaymentForm.changeDue" />
-            </el-form-item>
-
-            <el-form-item>
-              <el-button
-                type="danger"
-                size="small"
-                :disabled="step !== 3"
-                @click="handleMakePayment"
-                >MAKE PAYMENT</el-button
-              >
-            </el-form-item>
-          </el-form>
+          <div
+            class="payment-btn-group"
+            style="display: flex; justify-content: center"
+          >
+            <el-form :model="makePaymentForm" label-width="auto">
+              <el-form-item>
+                <el-button
+                  type="success"
+                  size="small"
+                  :disabled="step !== 3"
+                  @click="handleMakePayment"
+                  >MAKE PAYMENT</el-button
+                >
+              </el-form-item>
+              <el-form-item>
+                <el-button
+                  type="danger"
+                  size="small"
+                  :disabled="step !== 3"
+                  @click="handleMakePayment"
+                  >Cancel PAYMENT</el-button
+                >
+              </el-form-item>
+            </el-form>
+          </div>
         </el-card>
       </el-col>
       <el-col :span="19">
@@ -195,19 +180,18 @@
             :row-class-name="tableRowClassName"
           >
             <el-table-column prop="index" label="序号" width="100" />
-            <el-table-column prop="itemSn" label="商品选择" width="180" />
+            <el-table-column prop="skuCode" label="商品编码" width="180" />
             <el-table-column prop="productName" label="商品名称" width="180" />
-            <el-table-column prop="category" label="商品分类" width="180" />
-            <el-table-column prop="price" label="销售价格" width="180" />
-            <el-table-column prop="quantity" label="订购数量" width="200">
+            <el-table-column prop="categoryName" label="商品分类" width="120" />
+            <el-table-column prop="skuPrice" label="销售价格" width="120" />
+            <el-table-column prop="quantity" label="订购数量" width="180">
               <template #default="scope">
                 <el-input-number
                   v-model="scope.row.quantity"
                   size="small"
                   :disabled="step !== 1"
                   :min="1"
-                  :max="10"
-                  @change="handleChangeQuantity(scope.row)"
+                  @change="val => handleQuantityChange(val, scope.row)"
                 />
               </template>
             </el-table-column>
@@ -217,6 +201,14 @@
               class-name="small-padding fixed-width"
             >
               <template #default="scope">
+                <el-button
+                  link
+                  type="primary"
+                  icon="View"
+                  size="small"
+                  @click="handleView(scope.row)"
+                  >查看</el-button
+                >
                 <el-button
                   link
                   type="primary"
@@ -236,85 +228,70 @@
         </el-card>
       </el-col>
     </el-row>
+
+    <el-drawer v-model="drawer" title="商品信息" :with-header="false">
+      <el-descriptions title="商品信息" :column="2" border>
+        <el-descriptions-item label="商品图片">
+          <el-image
+            :src="currentProductInfo.skuImage"
+            style="width: 100px; height: 100px"
+          />
+        </el-descriptions-item>
+        <el-descriptions-item label="编码">{{
+          currentProductInfo.skuCode
+        }}</el-descriptions-item>
+        <el-descriptions-item label="名称">{{
+          currentProductInfo.productName
+        }}</el-descriptions-item>
+        <el-descriptions-item label="类别名称">{{
+          currentProductInfo.categoryName
+        }}</el-descriptions-item>
+        <el-descriptions-item label="价格">{{
+          currentProductInfo.skuPrice
+        }}</el-descriptions-item>
+        <el-descriptions-item label="类别ID">{{
+          currentProductInfo.categoryId
+        }}</el-descriptions-item>
+        <el-descriptions-item label="描述">{{
+          currentProductInfo.productDesc
+        }}</el-descriptions-item>
+      </el-descriptions>
+    </el-drawer>
   </div>
 </template>
 
 <script lang="ts" setup>
 import { ref, computed, onMounted, watch } from "vue";
+import debounce from "lodash-es/debounce";
 import type { ComponentSize } from "element-plus";
 import { ElMessage } from "element-plus";
 import {
   makeNewSale,
-  enterItem,
-  endSale,
   makePayment,
-  changeQuantity,
-  deleteSaleItem
+  deleteSaleItem,
+  getProductBySku,
+  updateSale,
+  updateSaleItem
 } from "@/api/pos/sale";
+
+import type { Sale } from "@/types/pos";
+import type { Order, OrderItem } from "@/types/order";
 
 // 控制业务步骤
 const step = ref(0);
-const queryParams = ref({
-  productCategoryId: undefined as number | undefined
-});
-
-// 商品分类树（三级）模拟数据，后续需要接新接口
-const categoryTreeOptions = ref([
-  {
-    categoryId: 1,
-    categoryName: "食品饮料",
-    children: [
-      {
-        categoryId: 11,
-        categoryName: "休闲零食",
-        children: [
-          { categoryId: 111, categoryName: "膨化食品" },
-          { categoryId: 112, categoryName: "糖果巧克力" }
-        ]
-      },
-      {
-        categoryId: 12,
-        categoryName: "酒水饮料",
-        children: [
-          { categoryId: 121, categoryName: "碳酸饮料" },
-          { categoryId: 122, categoryName: "茶饮咖啡" }
-        ]
-      }
-    ]
-  },
-  {
-    categoryId: 2,
-    categoryName: "日用百货",
-    children: [
-      {
-        categoryId: 21,
-        categoryName: "洗护用品",
-        children: [
-          { categoryId: 211, categoryName: "洗发水" },
-          { categoryId: 212, categoryName: "沐浴露" }
-        ]
-      }
-    ]
-  }
-]);
-
-// 分类切换事件
-const handleCategoryChange = (val: number | undefined) => {
-  console.log("选中分类ID：", val);
-};
-
-/*** =======第一步:开始一次新的销售 ======= */
-import type { Sale } from "@/types/pos";
+const skuStock = ref(-1);
+const currentProductInfo = ref<any>({});
 
 const totalQuantity = ref(0);
 const totalAmount = ref(0.0);
-const customerName = ref("张三");
+const customerName = ref("123456");
 const sale = ref<Sale>({
   saleNo: "",
   total: 0.0,
   totalQuantity: 0,
   status: ""
 });
+const drawer = ref<boolean>(false);
 // 初始化数据, 清空盘面数据
 function initData() {
   tableData.value = [];
@@ -331,6 +308,14 @@ function initData() {
   totalQuantity.value = 0;
   step.value = 0;
 }
+
+function initializeSale() {
+  // 清空商品录入表单和状态
+  enterItemForm.value.itemSn = "";
+  enterItemForm.value.quantity = 1;
+  skuStock.value = -1;
+  currentProductInfo.value = null;
+}
 // ===================== 预留：获取购买者/会员信息接口 =====================
 const handleGetPurchaser = () => {
   ElMessage.info("正在调用获取购买者信息接口...");
@@ -345,53 +330,157 @@ const handleGetPurchaser = () => {
 // 开始新的销售
 function handleMakeNewSale() {
   initData();
-  makeNewSale().then(response => {
-    sale.value = response.data;
+  initializeSale();
+  makeNewSale({
+    userId: 123456,
+    orderStatus: 0,
+    payStatus: 0
+  }).then(response => {
+    sale.value.saleNo = response.data.orderNo;
   });
   step.value = 1;
+  sale.value.status = "待支付";
 }
 
 /*** =======第二步: 输入商品明细 ======= */
 import type { Product, EnterItemForm, SaleItem } from "@/types/pos";
-import { listAllProduct } from "@/api/pos/product";
-const productOptions = ref<Product[]>([]);
 const enterItemForm = ref<EnterItemForm>({
   itemSn: "",
   quantity: 1
 });
 const tableData = ref<SaleItem[]>([]);
 
-// 加载商品列表数据
-onMounted(() => {
-  listAllProduct().then(response => {
-    productOptions.value = response.data;
-  });
-});
 // 输入商品明细
 function handleEnterItem() {
-  enterItem(enterItemForm.value).then(response => {
-    tableData.value = response.data;
-  });
+  if (!currentProductInfo.value) {
+    ElMessage.warning("请先输入有效的商品编码并获取库存信息");
+    return;
+  }
+  if (skuStock.value >= 0) {
+    const inputQuantity = enterItemForm.value.quantity;
+    if (inputQuantity > skuStock.value) {
+      ElMessage.error(`订购数量不能超过库存！`);
+      return;
+    }
+  }
+  try {
+    // 1. 查找表格中是否已存在该商品
+    const existItem = tableData.value.find(
+      item => item.skuCode === currentProductInfo.value.skuCode
+    );
+
+    // 2. 计算累加后的总数量
+    const newQuantity = existItem
+      ? existItem.quantity + enterItemForm.value.quantity
+      : enterItemForm.value.quantity;
+
+    const orderItem: OrderItem = {
+      // 构造orderItems数组
+      orderNo: sale.value.saleNo,
+      productId: currentProductInfo.value.productId,
+      productSn: currentProductInfo.value.productSn,
+      skuId: currentProductInfo.value.skuId,
+      skuCode: currentProductInfo.value.skuCode || enterItemForm.value.itemSn,
+      specCombo: currentProductInfo.value.specCombo,
+      productName: currentProductInfo.value.productName,
+      categoryId: currentProductInfo.value.categoryId,
+      categoryName: currentProductInfo.value.categoryName,
+      orderPrice: currentProductInfo.value.skuPrice,
+      orderQuantity: newQuantity
+    };
+    updateSaleItem([orderItem]);
+
+    // 5. 更新本地表格数据（保持和接口一致）
+    if (existItem) {
+      existItem.quantity = newQuantity; // 累加已有商品数量
+    } else {
+      const newItem: SaleItem = {
+        index: tableData.value.length + 1,
+        skuCode: currentProductInfo.value.skuCode || enterItemForm.value.itemSn,
+        productName: currentProductInfo.value.productName || "未知商品",
+        categoryName: currentProductInfo.value.categoryName || "未知分类",
+        skuPrice: currentProductInfo.value.skuPrice || 0,
+        quantity: newQuantity, // 新增商品用本次数量
+        skuId: currentProductInfo.value.skuId,
+        skuStock: currentProductInfo.value.orderQuantity - newQuantity // 计算剩余库存
+      };
+      tableData.value.push(newItem);
+    }
+
+    initializeSale();
+  } catch (error) {
+    console.error("更新订单商品明细失败：", error);
+  }
 }
 
-// 商品输入数量change事件, 无需处理
-const handleChange = (value: number) => {
-  console.log(value);
+// 新增商品编码输入处理函数（带防抖）
+const handleItemSnInput = debounce(async (val: string) => {
+  // 当输入长度等于11位时调用接口
+  if (val.trim().length === 11) {
+    try {
+      const response = await getProductBySku(val.trim());
+      skuStock.value = response.data.skuStock || 0;
+      currentProductInfo.value = response.data;
+    } catch (error) {
+      skuStock.value = 0;
+      console.error("获取商品库存失败：", error);
+    }
+  } else {
+    // 输入长度不足11位时重置库存状态
+    skuStock.value = -1;
+  }
+}, 300);
+
+// 处理表格中数量变更的逻辑
+const handleQuantityChange = async (val: number, row: SaleItem) => {
+  if (row.skuStock >= 0) {
+    const inputQuantity = val;
+    if (inputQuantity > skuStock.value) {
+      ElMessage.error(`订购数量不能超过库存！`);
+      return;
+    }
+  }
+  try {
+    const orderItem: OrderItem = {
+      orderNo: sale.value.saleNo,
+      skuId: row.skuId,
+      orderQuantity: val
+    };
+    await updateSaleItem([orderItem]);
+  } catch (error) {
+    console.error("更新商品数量失败：", error);
+    ElMessage.error("更新商品数量失败，请重试");
+    // 接口失败时回滚数量显示
+    row.quantity = row.quantity;
+  }
 };
 
 /*** =======第三步: 结束录入, 计算总金额/总件数 ====== */
 
 // 结束录入
 function handleEndSale() {
-  endSale().then(response => {
-    sale.value.total = response.data;
-    totalAmount.value = response.data;
-  });
-  step.value = 3;
+  // 构造仅包含orderNo和payAmount的Order对象
+  const updateParams: Order = {
+    orderNo: sale.value.saleNo, // 订单号
+    payAmount: totalAmount.value // 总金额
+  };
+  // 调用updateSale并处理Promise
+  updateSale(updateParams)
+    .then(() => {
+      ElMessage.success("订单金额更新成功");
+      step.value = 3;
+    })
+    .catch(error => {
+      console.error("更新订单失败：", error);
+      ElMessage.error("更新订单失败，请重试");
+      // 即使接口失败，也可以选择是否切换步骤（根据业务需求调整）
+      // step.value = 3;
+    });
 }
 
 /*** =======第四步: 确认支付 ====== */
 import type { MakePaymentForm } from "@/types/pos";
+import { c } from "node_modules/vite/dist/node/types.d-aGj9QkWt";
 const makePaymentForm = ref<MakePaymentForm>({
   payMethod: "CASH",
   cashTendered: 0.0,
@@ -415,27 +504,42 @@ watch(
   tableData,
   () => {
     let quantity = 0;
+    let sumAmount = 0.0;
     tableData.value.forEach(item => {
       quantity += item.quantity;
+      sumAmount += item.skuPrice * item.quantity;
     });
     totalQuantity.value = quantity;
     sale.value.totalQuantity = quantity;
+
+    totalAmount.value = sumAmount;
+    sale.value.total = sumAmount;
   },
   { deep: true }
 );
 
 /*** =======终极任务二: 维护订单商品明细 ====== */
-// 修改订单商品明细数量
-const handleChangeQuantity = (row: SaleItem) => {
-  changeQuantity(row).then(response => {
-    tableData.value = response.data;
-  });
+// 查看订单商品明细
+const handleView = (row: SaleItem) => {
+  if (row.skuCode !== undefined) {
+    getProductBySku(row.skuCode).then(response => {
+      currentProductInfo.value = response.data;
+      drawer.value = true;
+    });
+  }
 };
 
 // 删除订单商品明细
 const handleDelete = (row: SaleItem) => {
-  deleteSaleItem(row.itemSn).then(response => {
-    tableData.value = response.data;
+  deleteSaleItem(sale.value.saleNo, row.skuId).then(() => {
+    // 从表格数据中移除该行
+    const index = tableData.value.findIndex(item => item.skuId === row.skuId);
+    if (index !== -1) {
+      tableData.value.splice(index, 1);
+      ElMessage.success("删除成功");
+    } else {
+      ElMessage.error("删除失败，未找到对应商品");
+    }
   });
 };
 

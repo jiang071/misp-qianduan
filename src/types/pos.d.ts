@@ -97,10 +97,22 @@ export interface Sale {
 
 export interface SaleItem {
   index?: number;
-  itemSn: string;
+  skuId?: number;
+  skuCode: string;
   productName: string;
-  price: number;
+  skuPrice: number;
   quantity: number;
+  skuStock?: number;
+  skuImage?: string;
+  productId?: number;
+  productSn?: string;
+  prouctDesc?: string;
+  mainImage?: string;
+  detailImages?: string;
+  productStatus?: string;
+  categoryId?: number;
+  categoryName?: string;
+  categoryLevel?: number;
 }
 
 export interface EnterItemForm {
