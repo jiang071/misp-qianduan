@@ -75,6 +75,16 @@ export interface CategoryQueryParams {
   level?: number;
 }
 
+export interface CategoryQueryParams {
+  pageNum: number;
+  pageSize: number;
+  categoryName?: string;
+  categoryId?: number;
+  state?: boolean;
+  parentId?: number;
+  level?: number;
+}
+
 // 收银
 
 export interface Sale {
@@ -108,18 +118,38 @@ export interface MakePaymentForm {
 export interface OrderQueryParams {
   pageNum: number;
   pageSize: number;
-  orderSn?: string;
-  payUserName?: string;
+  orderNo?: string;
+  username?: string;
   orderStatus?: string;
 }
 
 export interface Order {
-  orderId?: number;
-  orderSn?: string;
-  payUserName?: string;
-  payAmount?: number;
-  orderStatus?: string;
-  payTime?: string;
-  createTime?: string;
-  remark?: string;
+  id: number;
+  orderNo: string;
+  userId: string;
+  username: string | null;
+  payAmount: number | null;
+  orderStatus: number;
+  createTime: string;
+  alipayTradeNo: string | null;
+  payUrl: string | null;
+  payTime: string | null;
+  payStatus: number;
+}
+
+// 订单商品明细表接口
+export interface OrderItem {
+  id: number;
+  orderNo: string;
+  productId: number;
+  productSn: string;
+  skuId: number;
+  skuCode: string;
+  specCombo: string | Record<string, any>;
+  productName: string;
+  categoryId: number | null;
+  categoryName: string | null;
+  orderPrice: number;
+  orderQuantity: number;
+  createTime: string | null;
 }

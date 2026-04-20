@@ -20,14 +20,14 @@
           @keyup.enter="handleQuery"
         />
       </el-form-item>
-      <el-form-item label="产品类别" prop="productCategoryId">
+      <el-form-item label="产品类别" prop="categoryId">
         <!-- <el-select v-model="queryParams.productCategoryId" style="width: 200px" placeholder="请选择类别">
                     <el-option v-for="item in categoryOptions" :key="item.categoryId" :label="item.categoryName"
                         :value="item.categoryId" />
                 </el-select> -->
         <el-tree-select
           ref="categoryTreeRef"
-          v-model="queryParams.productCategoryId"
+          v-model="queryParams.categoryId"
           :data="cateogryTreeOptions"
           :props="{
             label: 'categoryName',
@@ -87,7 +87,11 @@
       @selection-change="handleSelectionChange"
     >
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="ID" align="center" width="100" prop="productId" />
+      <el-table-column label="序号" align="center" width="100">
+        <template #default="scope">
+          {{ scope.$index + 1 }}
+        </template></el-table-column
+      >
       <el-table-column
         label="编码"
         align="center"
@@ -99,15 +103,20 @@
         label="类别ID"
         align="center"
         width="200"
-        prop="category.categoryId"
+        prop="categoryId"
       />
       <el-table-column
         label="类别"
         align="center"
         width="200"
-        prop="category.categoryName"
+        prop="categoryName"
       />
-      <el-table-column label="价格" align="center" width="200" prop="price" />
+      <el-table-column
+        label="价格"
+        align="center"
+        width="200"
+        prop="displayPrice"
+      />
       <el-table-column
         label="操作"
         align="center"
@@ -175,7 +184,7 @@
     </el-drawer>
 
     <el-dialog v-model="dialogOpen" :title="title" width="800" append-to-body>
-      <product-form :product-id="selectedId" @close="handleCloseDiaglog" />
+      <product-form :product-id="selectedId" @success="handleCloseDiaglog" />
     </el-dialog>
   </div>
 </template>
@@ -202,6 +211,7 @@ import {
   ProductSku,
   ProductSpecAttr
 } from "@/types/pos";
+import { el } from "@faker-js/faker";
 
 onMounted(() => {
   // 挂载后加载数据
@@ -227,7 +237,7 @@ const query = reactive<ProductQueryParams>({
   pageSize: 10,
   productSn: undefined,
   productName: undefined,
-  productCategoryId: undefined,
+  categoryId: undefined,
   categoryIds: []
 });
 const queryParams = toRef(query);
@@ -237,11 +247,12 @@ const handleCategoryChange = (value: number | undefined) => {
   console.log("📌 树形选择器选中的原始值：", value);
   if (!value || !categoryTreeRef.value) {
     queryParams.value.categoryIds = [];
+    // 选择空值 → 自动查询
+    handleQuery();
     return;
   }
 
   try {
-    // 获取 el-tree 实例（兼容不同版本的 element-plus）
     const treeInstance =
       categoryTreeRef.value.tree || categoryTreeRef.value.getTree?.();
     if (!treeInstance) {
@@ -249,25 +260,22 @@ const handleCategoryChange = (value: number | undefined) => {
       return;
     }
 
-    // 根据选中的 value 获取节点对象
     const node = treeInstance.getNode(value);
     if (!node || !node.data) {
       queryParams.value.categoryIds = [];
       return;
     }
 
-    // 从当前节点向上遍历，收集所有父节点 ID（顺序：一级 -> 二级 -> 三级）
     const categoryIds: number[] = [];
     let currentNode: any = node;
 
     while (currentNode && currentNode.data) {
       if (currentNode.data.categoryId !== undefined) {
-        categoryIds.unshift(currentNode.data.categoryId); // unshift 保证父节点在前面
+        categoryIds.unshift(currentNode.data.categoryId);
       }
-      currentNode = currentNode.parent; // 移动到父节点
+      currentNode = currentNode.parent;
     }
 
-    // 更新查询参数
     queryParams.value.categoryIds = categoryIds;
   } catch (error) {
     console.error("获取分类路径失败:", error);
@@ -279,8 +287,8 @@ const handleCategoryChange = (value: number | undefined) => {
 function handleQuery() {
   queryParams.value.pageNum = 1;
   getProductList();
-  const categoryTip = queryParams.value.productCategoryId
-    ? `，分类ID：${queryParams.value.productCategoryId}`
+  const categoryTip = queryParams.value.categoryId
+    ? `，分类ID：${queryParams.value.categoryId}`
     : "";
   ElMessage.success(`已执行查询${categoryTip}`);
 }
@@ -288,6 +296,8 @@ function handleQuery() {
 const resetQuery = (formEl: FormInstance | undefined) => {
   if (!formEl) return;
   formEl.resetFields();
+  queryParams.value.categoryId = undefined;
+  queryParams.value.categoryIds = [];
   getProductList();
 };
 
@@ -308,12 +318,19 @@ function getProductList() {
     pageSize: queryParams.value.pageSize,
     productSn: queryParams.value.productSn || "",
     productName: queryParams.value.productName || "",
-    categoryIds: queryParams.value.categoryIds || []
+    categoryIds: queryParams.value.categoryIds || [],
+    categoryId: queryParams.value.categoryId ?? undefined
   };
 
   listProductByPage(requestParams)
     .then(response => {
-      dataList.value = response?.data?.list || [];
+      let list = response?.data?.list || [];
+      list = [...list].sort((a, b) => {
+        const snA = a.productSn || "";
+        const snB = b.productSn || "";
+        return snA.localeCompare(snB);
+      });
+      dataList.value = list;
       total.value = response?.data?.total || 0;
       loading.value = false;
     })
@@ -322,7 +339,7 @@ function getProductList() {
       dataList.value = [];
       total.value = 0;
       loading.value = false;
-      ElMessage.warning("部分商品数据异常，已安全显示");
+      ElMessage.warning("查询商品数据失败，请稍后重试");
     });
 }
 
@@ -419,6 +436,7 @@ function handleUpdate(row: any) {
 /** 提交表单后关闭对话框 */
 function handleCloseDiaglog() {
   dialogOpen.value = false;
+  selectedId.value = undefined;
   getProductList();
 }
 

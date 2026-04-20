@@ -123,3 +123,9 @@ export const getProductSkuByProductId = (productId: number) => {
     baseUrlApi("/product/sku/list/" + productId)
   );
 };
+
+export const addProductSkus = (skus: ProductSku[]) => {
+  return http.request<ApiResult>("post", baseUrlApi("/product/sku/addSkus"), {
+    data: skus
+  });
+};

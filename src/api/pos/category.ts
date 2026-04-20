@@ -41,3 +41,11 @@ export function addCategory(data: Category) {
     data
   });
 }
+
+export function updateCategory(data: Category) {
+  return request({
+    url: "category/update",
+    method: "post",
+    data
+  });
+}
