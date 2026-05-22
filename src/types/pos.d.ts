@@ -151,5 +151,23 @@ export interface OrderItem {
   categoryName: string | null;
   orderPrice: number;
   orderQuantity: number;
+  itemStatus: number;
   createTime: string | null;
 }
+
+// 订单状态新增：4-已退款
+export const OrderStatusMap = {
+  0: "待支付",
+  1: "已支付",
+  2: "已完成",
+  3: "已取消",
+  4: "已退款" // 【新增】
+} as const;
+
+// 【新增】订单商品状态
+export const OrderItemStatusMap = {
+  0: "待支付",
+  1: "已支付",
+  2: "已退款",
+  3: "已换货"
+} as const;

@@ -397,6 +397,25 @@ function handleCloseDialog() {
 
 // ====================== 删除 ======================
 function handleDelete(row: Order) {
+  // 🔥 状态判断：只有 2已完成 / 3已取消 才能删除
+  if (row.orderStatus === 0) {
+    // 未支付 → 强制弹窗
+    ElMessageBox.alert("该订单未支付，无法删除！", "提示", {
+      confirmButtonText: "确定",
+      type: "warning"
+    });
+    return;
+  }
+  if (row.orderStatus === 1) {
+    // 未完成 → 强制弹窗
+    ElMessageBox.alert("该订单未完成，无法删除！", "提示", {
+      confirmButtonText: "确定",
+      type: "warning"
+    });
+    return;
+  }
+
+  // 正常删除流程
   ElMessageBox.confirm("确认删除该订单？", "提示").then(() => {
     deleteOrderByOrderId(row.id).then(() => {
       ElMessage.success("删除成功");
@@ -407,6 +426,31 @@ function handleDelete(row: Order) {
 
 // 批量删除
 function handleBatchDelete() {
+  // 🔥 批量删除前：先校验所有选中订单的状态
+  const invalidOrders = selectedIds.value
+    .map(id => dataList.value.find(item => item.id === id))
+    .filter(Boolean) as Order[];
+
+  // 检查是否有不能删除的订单
+  const hasUnpaid = invalidOrders.some(item => item.orderStatus === 0);
+  const hasUnfinished = invalidOrders.some(item => item.orderStatus === 1);
+
+  if (hasUnpaid) {
+    ElMessageBox.alert("选中订单包含未支付订单，无法删除！", "提示", {
+      confirmButtonText: "确定",
+      type: "warning"
+    });
+    return;
+  }
+  if (hasUnfinished) {
+    ElMessageBox.alert("选中订单包含未完成订单，无法删除！", "提示", {
+      confirmButtonText: "确定",
+      type: "warning"
+    });
+    return;
+  }
+
+  // 正常批量删除
   ElMessageBox.confirm("确认删除选中订单？", "提示").then(() => {
     deleteOrderBatch(selectedIds.value).then(() => {
       ElMessage.success("批量删除成功");
@@ -446,5 +490,3 @@ const getStatusTagType = (status: number) => {
   }
 };
 </script>
-
-<style scoped></style>
