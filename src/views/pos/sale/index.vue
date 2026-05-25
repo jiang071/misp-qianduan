@@ -62,7 +62,7 @@
             class="payment-btn-group"
             style="display: flex; justify-content: center"
           >
-            <el-form :model="makePaymentForm" label-width="auto">
+            <el-form label-width="auto">
               <el-form-item>
                 <el-button
                   type="success"
@@ -77,7 +77,7 @@
                   type="danger"
                   size="small"
                   :disabled="step !== 3"
-                  @click="handleMakePayment"
+                  @click="handleCancelPayment"
                   >Cancel PAYMENT</el-button
                 >
               </el-form-item>
@@ -261,17 +261,18 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, onMounted, watch } from "vue";
+import { ref, computed, watch } from "vue";
 import debounce from "lodash-es/debounce";
 import type { ComponentSize } from "element-plus";
 import { ElMessage } from "element-plus";
 import {
   makeNewSale,
-  makePayment,
   deleteSaleItem,
   getProductBySku,
   updateSale,
-  updateSaleItem
+  updateSaleItem,
+  paySale,
+  cancelSale
 } from "@/api/pos/sale";
 
 import type { Sale } from "@/types/pos";
@@ -298,11 +299,6 @@ function initData() {
   enterItemForm.value = {
     itemSn: "",
     quantity: 1
-  };
-  makePaymentForm.value = {
-    payMethod: "",
-    cashTendered: 0.0,
-    changeDue: 0.0
   };
   totalAmount.value = 0.0;
   totalQuantity.value = 0;
@@ -344,6 +340,7 @@ function handleMakeNewSale() {
 
 /*** =======第二步: 输入商品明细 ======= */
 import type { Product, EnterItemForm, SaleItem } from "@/types/pos";
+import { status } from "nprogress";
 const enterItemForm = ref<EnterItemForm>({
   itemSn: "",
   quantity: 1
@@ -473,32 +470,67 @@ function handleEndSale() {
     .catch(error => {
       console.error("更新订单失败：", error);
       ElMessage.error("更新订单失败，请重试");
-      // 即使接口失败，也可以选择是否切换步骤（根据业务需求调整）
-      // step.value = 3;
     });
 }
 
 /*** =======第四步: 确认支付 ====== */
-import type { MakePaymentForm } from "@/types/pos";
-import { c } from "node_modules/vite/dist/node/types.d-aGj9QkWt";
-const makePaymentForm = ref<MakePaymentForm>({
-  payMethod: "CASH",
-  cashTendered: 0.0,
-  changeDue: 0.0
-});
-
 // 发起支付
 function handleMakePayment() {
-  if (makePaymentForm.value.cashTendered < totalAmount.value) {
-    ElMessage({ type: "warning", message: "输入的付款金额小于订单总金额" });
-  } else {
-    makePayment(makePaymentForm.value).then(response => {
-      makePaymentForm.value.changeDue = response.data;
-    });
-
-    step.value = 4;
+  if (totalAmount.value <= 0) {
+    ElMessage.error("订单金额异常，无法发起支付");
+    return;
   }
+  paySale(sale.value.saleNo)
+    .then(response => {
+      handleAlipayForm(response.data.payForm);
+      ElMessage.info("正在跳转到支付页面...");
+    })
+    .catch(error => {
+      console.error("支付请求失败：", error);
+      ElMessage.error("支付请求失败，请重试");
+    });
 }
+
+// 处理支付宝支付表单
+function handleAlipayForm(payForm: string) {
+  // 创建临时容器存放支付表单
+  const tempDiv = document.createElement("div");
+  tempDiv.id = "alipay-pay-form";
+  // 将接口返回的表单字符串插入到临时容器
+  tempDiv.innerHTML = payForm;
+  // 追加到body中（表单提交需要DOM存在）
+  document.body.appendChild(tempDiv);
+
+  // 自动触发表单提交（接口返回的script已包含自动提交，兜底再触发一次）
+  const form = document.forms["punchout_form"];
+  if (form) {
+    form.submit();
+  }
+
+  // 提交后移除临时DOM（可选，防止冗余）
+  setTimeout(() => {
+    document.body.removeChild(tempDiv);
+  }, 1000);
+}
+
+//取消订单
+const handleCancelPayment = () => {
+  cancelSale(sale.value.saleNo)
+    .then(() => {
+      ElMessage.success("订单已取消");
+      sale.value = {
+        saleNo: "",
+        total: 0.0,
+        totalQuantity: 0,
+        status: ""
+      };
+      initData();
+      initializeSale();
+    })
+    .catch(error => {
+      console.error("取消订单失败：", error);
+    });
+};
 
 watch(
   tableData,

@@ -9,7 +9,7 @@ export function makeNewSale(params: {
   payStatus: number;
 }) {
   return request({
-    url: "/pos/create",
+    url: "pos/create",
     method: "post",
     data: params
   });
@@ -90,8 +90,27 @@ export function updateSale(data: Order) {
 // 更新订单项
 export function updateSaleItem(data: OrderItem[]) {
   return request({
-    url: "/pos/update/items",
+    url: "/pos/item/update",
     method: "put",
     data: data
+  });
+}
+
+//支付订单
+export function paySale(orderNo: string) {
+  return request({
+    url: "/pos/pay",
+    method: "post",
+    params: {
+      orderNo
+    }
+  });
+}
+
+//取消订单
+export function cancelSale(orderNo: string) {
+  return request({
+    url: "/pos/cancel/" + orderNo,
+    method: "post"
   });
 }
