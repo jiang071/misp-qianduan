@@ -31,6 +31,7 @@
           <el-option label="已支付" :value="1" />
           <el-option label="已完成" :value="2" />
           <el-option label="已取消" :value="3" />
+          <el-option label="已退款" :value="4" />
         </el-select>
       </el-form-item>
 
@@ -245,7 +246,7 @@
 import { ref, reactive, onMounted } from "vue";
 import type { FormInstance } from "element-plus";
 import { ElMessage, ElMessageBox } from "element-plus";
-
+import { useRoute } from "vue-router";
 import {
   listOrderByPage,
   getOrderItemsByOrderNo,
@@ -259,10 +260,6 @@ import {
 import OrderForm from "./form.vue";
 import type { OrderQueryParams, Order, OrderItem } from "@/types/pos";
 
-onMounted(() => {
-  getOrderList();
-});
-
 // ====================== 查询区域 ======================
 const queryRef = ref<FormInstance>();
 const queryParams = reactive<OrderQueryParams>({
@@ -271,6 +268,14 @@ const queryParams = reactive<OrderQueryParams>({
   orderNo: undefined,
   username: undefined,
   orderStatus: undefined
+});
+const route = useRoute();
+onMounted(() => {
+  const status = route.query.orderStatus;
+  if (status) {
+    queryParams.orderStatus = Array.isArray(status) ? status[0] : status;
+  }
+  getOrderList();
 });
 
 // 查询
@@ -470,6 +475,8 @@ const getStatusText = (status: number) => {
       return "已完成";
     case 3:
       return "已取消";
+    case 4:
+      return "已退款";
     default:
       return "未知";
   }
