@@ -151,8 +151,8 @@ export interface OrderItem {
   categoryName: string | null;
   orderPrice: number;
   orderQuantity: number;
-  itemStatus: number;
   createTime: string | null;
+  orderItemStatus: number;
 }
 
 // 订单状态新增：4-已退款

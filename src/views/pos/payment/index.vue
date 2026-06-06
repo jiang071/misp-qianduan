@@ -31,6 +31,7 @@
           <el-option label="已支付" :value="1" />
           <el-option label="已完成" :value="2" />
           <el-option label="已取消" :value="3" />
+          <el-option label="已退款" :value="4" />
         </el-select>
       </el-form-item>
 
@@ -231,28 +232,35 @@
     </el-drawer>
 
     <!-- 修改弹窗 -->
-    <el-dialog v-model="dialogOpen" :title="title" width="700px" append-to-body>
+    <el-dialog
+      v-model="dialogOpen"
+      :title="title"
+      width="1200px"
+      append-to-body
+    >
       <order-form
+        v-if="dialogOpen"
         :order-id="selectedId"
         :order-no="selectedOrderNo"
         @close="handleCloseDialog"
+        @refresh-parent="getOrderList"
       />
     </el-dialog>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { ref, reactive, onMounted } from "vue";
+import { ref, reactive, onMounted, nextTick } from "vue";
 import type { FormInstance } from "element-plus";
 import { ElMessage, ElMessageBox } from "element-plus";
 
 import {
   listOrderByPage,
-  getOrderItemsByOrderNo,
   deleteOrderByOrderId,
   deleteOrderBatch,
   updateOrder,
-  updateOrderItems
+  updateOrderItems,
+  getOrderByOrderNo
 } from "@/api/pos/order";
 
 // 子组件
@@ -338,16 +346,21 @@ const order = ref<Order>({
 
 const orderItemList = ref<OrderItem[]>([]);
 
+// ====================== 查看 ======================
 async function handleView(row: Order) {
   try {
-    // ==============================================
-    // 🔥 核心修复：直接用当前表格的 row，不再调用任何订单接口
-    // ==============================================
     order.value = row;
 
-    // 只查询商品明细（你唯一能用的详情接口）
-    const itemsRes = await getOrderItemsByOrderNo(row.orderNo);
-    orderItemList.value = itemsRes.data || [];
+    // 🔥 关键修复：接口返回数组，必须取 [0]，再拿 orderItems
+    const itemsRes = await getOrderByOrderNo(row.orderNo);
+    const dataList = itemsRes.data || [];
+
+    // 正确赋值：取第一条数据的 orderItems
+    if (dataList.length > 0) {
+      orderItemList.value = dataList[0].orderItems || [];
+    } else {
+      orderItemList.value = [];
+    }
 
     // 打开抽屉
     drawer.value = true;
@@ -378,44 +391,67 @@ const dialogOpen = ref(false);
 const title = ref("");
 const selectedId = ref<number | undefined>();
 const selectedOrderNo = ref("");
+const selectedOrder = ref<Order | null>(null); // 🔥 新增：存储当前选中的完整订单对象
 
-function handleUpdate(row?: Order) {
-  const current =
-    row || dataList.value.find(item => item.id === selectedIds.value[0]);
-  if (!current) return ElMessage.warning("请选择一条订单");
+async function handleUpdate(row?: Order) {
+  try {
+    const current =
+      row || dataList.value.find(item => item.id === selectedIds.value[0]);
+    if (!current) {
+      ElMessage.warning("请选择一条订单");
+      return;
+    }
 
-  selectedId.value = current.id;
-  selectedOrderNo.value = current.orderNo;
-  title.value = "修改订单：" + current.orderNo;
-  dialogOpen.value = true;
+    // 从数据库重新获取最新数据（关键修复）
+    const res = await getOrderByOrderNo(current.orderNo);
+    const orderDataFromApi = res.data || [];
+
+    if (!orderDataFromApi.length) {
+      ElMessage.error("订单不存在");
+      return;
+    }
+
+    // 赋值最新数据
+    const latestOrder = orderDataFromApi[0];
+    selectedId.value = latestOrder.id;
+    selectedOrderNo.value = latestOrder.orderNo;
+    selectedOrder.value = latestOrder;
+
+    title.value = "修改订单：" + latestOrder.orderNo;
+    dialogOpen.value = false;
+    await nextTick();
+    dialogOpen.value = true;
+  } catch (err) {
+    ElMessage.error("加载订单信息失败");
+    console.error(err);
+  }
 }
 
-function handleCloseDialog() {
+const handleCloseDialog = () => {
   dialogOpen.value = false;
+  selectedOrder.value = null;
+  // 刷新列表，保证列表也是最新的（可选但推荐）
   getOrderList();
-}
+};
 
 // ====================== 删除 ======================
 function handleDelete(row: Order) {
-  // 🔥 状态判断：只有 2已完成 / 3已取消 才能删除
-  if (row.orderStatus === 0) {
-    // 未支付 → 强制弹窗
-    ElMessageBox.alert("该订单未支付，无法删除！", "提示", {
-      confirmButtonText: "确定",
-      type: "warning"
-    });
-    return;
-  }
-  if (row.orderStatus === 1) {
-    // 未完成 → 强制弹窗
-    ElMessageBox.alert("该订单未完成，无法删除！", "提示", {
-      confirmButtonText: "确定",
-      type: "warning"
-    });
+  // 可删除的状态：2 已完成 / 3 已取消 / 4 已退款
+  const canDelete = [2, 3, 4].includes(row.orderStatus);
+
+  if (!canDelete) {
+    ElMessageBox.alert(
+      "该订单状态不允许删除！仅【已完成/已取消/已退款】订单可以删除",
+      "提示",
+      {
+        confirmButtonText: "确定",
+        type: "warning"
+      }
+    );
     return;
   }
 
-  // 正常删除流程
+  // 确认删除
   ElMessageBox.confirm("确认删除该订单？", "提示").then(() => {
     deleteOrderByOrderId(row.id).then(() => {
       ElMessage.success("删除成功");
@@ -426,31 +462,28 @@ function handleDelete(row: Order) {
 
 // 批量删除
 function handleBatchDelete() {
-  // 🔥 批量删除前：先校验所有选中订单的状态
   const invalidOrders = selectedIds.value
     .map(id => dataList.value.find(item => item.id === id))
     .filter(Boolean) as Order[];
 
-  // 检查是否有不能删除的订单
-  const hasUnpaid = invalidOrders.some(item => item.orderStatus === 0);
-  const hasUnfinished = invalidOrders.some(item => item.orderStatus === 1);
+  // 检查是否有不可删除的订单（不是 2、3、4 都不能删）
+  const hasCannotDelete = invalidOrders.some(
+    item => ![2, 3, 4].includes(item.orderStatus)
+  );
 
-  if (hasUnpaid) {
-    ElMessageBox.alert("选中订单包含未支付订单，无法删除！", "提示", {
-      confirmButtonText: "确定",
-      type: "warning"
-    });
-    return;
-  }
-  if (hasUnfinished) {
-    ElMessageBox.alert("选中订单包含未完成订单，无法删除！", "提示", {
-      confirmButtonText: "确定",
-      type: "warning"
-    });
+  if (hasCannotDelete) {
+    ElMessageBox.alert(
+      "选中订单包含不可删除状态！仅【已完成/已取消/已退款】订单可以删除",
+      "提示",
+      {
+        confirmButtonText: "确定",
+        type: "warning"
+      }
+    );
     return;
   }
 
-  // 正常批量删除
+  // 确认批量删除
   ElMessageBox.confirm("确认删除选中订单？", "提示").then(() => {
     deleteOrderBatch(selectedIds.value).then(() => {
       ElMessage.success("批量删除成功");
@@ -470,6 +503,8 @@ const getStatusText = (status: number) => {
       return "已完成";
     case 3:
       return "已取消";
+    case 4:
+      return "已退款";
     default:
       return "未知";
   }
@@ -484,6 +519,8 @@ const getStatusTagType = (status: number) => {
     case 2:
       return "primary";
     case 3:
+      return "info";
+    case 4:
       return "danger";
     default:
       return "info";
