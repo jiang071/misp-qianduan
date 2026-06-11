@@ -171,3 +171,67 @@ export const OrderItemStatusMap = {
   2: "已退款",
   3: "已换货"
 } as const;
+
+// 优惠券主体信息
+export interface CouponInfo {
+  id?: bigint; // 主键自增
+  couponName: string; // 优惠券名称
+  couponCode: string; // 优惠券唯一编码
+  couponType: number; // 类型：0代表对应业务类型
+  discount: number; // 优惠值（满减金额/折扣比例）
+  minAmount: number; // 最低消费门槛
+  quantity: number; // 发行总数量
+  remainQuantity: number; // 剩余可领数量
+  validStartTime: string; // 有效期开始时间
+  validEndTime: string; // 有效期结束时间
+  status: number; // 优惠券状态 0=启用/停用等
+  createTime?: string; // 创建时间
+}
+
+// 优惠券分页查询参数
+export interface CouponQueryParams {
+  pageNum: number;
+  pageSize: number;
+  couponName?: string;
+  couponCode?: string;
+  couponType?: number;
+  status?: number;
+}
+
+// 用户优惠券领取&使用记录
+export interface CouponUserRecord {
+  id?: bigint;
+  couponCode: string; // 关联优惠券编码
+  userId: string; // 领取用户ID
+  orderNo?: string | null; // 抵扣订单号，未使用为null
+  discountAmount: number; // 实际抵扣金额
+  useTime?: string | null; // 使用时间，未使用为null
+}
+
+// 用户优惠券查询参数（查个人领到的券）
+export interface UserCouponQueryParams {
+  pageNum: number;
+  pageSize: number;
+  userId: string;
+  useStatus?: number; // 自定义：0未使用 1已使用 2已过期
+}
+
+// 优惠券类型映射
+export const CouponTypeMap = {
+  0: "满减券"
+  // 可自行扩展 1折扣券 2无门槛券...
+} as const;
+
+// 优惠券整体状态映射
+export const CouponStatusMap = {
+  0: "未启用",
+  1: "正常发放",
+  2: "已过期"
+} as const;
+
+// 用户券使用状态（业务判断用）
+export const UserCouponUseStatusMap = {
+  0: "未使用",
+  1: "已使用",
+  2: "已过期"
+} as const;

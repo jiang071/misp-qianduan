@@ -54,6 +54,15 @@ export default [
           icon: "ep:money",
           title: "订单管理"
         }
+      },
+      {
+        path: "/pos/coupon",
+        name: "coupon",
+        component: () => import("@/views/pos/coupon/index.vue"),
+        meta: {
+          icon: "ep:discount",
+          title: "优惠券管理"
+        }
       }
     ]
   }

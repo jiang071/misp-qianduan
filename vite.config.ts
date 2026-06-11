@@ -25,9 +25,15 @@ export default ({ mode }: ConfigEnv): UserConfigExport => {
       host: "0.0.0.0",
       // 本地跨域代理 https://cn.vitejs.dev/config/server-options.html#server-proxy
       proxy: {
+        "/api/coupon": {
+          target: "http://10.200.192.52:8085",
+          changeOrigin: true,
+          rewrite: path => path.replace(/^\/api/, "")
+        },
         "/api": {
           // 这里填写后端地址
-          target: "http://10.200.192.197",
+          target: "http://10.200.192.52",
+          //熙：10.200.192.197
           changeOrigin: true
           // rewrite: path => path.replace(/^\/api/, "")
         }
