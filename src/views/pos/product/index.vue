@@ -2,19 +2,19 @@
   <div class="app-container">
     <!-- 数据查询区：表单 -->
     <el-form ref="queryRef" :model="queryParams" :inline="true">
-      <el-form-item label="编码" prop="productSn">
+      <el-form-item label="商品编码" prop="productSn">
         <el-input
           v-model="queryParams.productSn"
-          placeholder="请输入编码"
+          placeholder="请输入商品编码"
           clearable
           style="width: 200px"
           @keyup.enter="handleQuery"
         />
       </el-form-item>
-      <el-form-item label="名称" prop="productName">
+      <el-form-item label="商品名称" prop="productName">
         <el-input
           v-model="queryParams.productName"
-          placeholder="请输入名称"
+          placeholder="请输入商品名称"
           clearable
           style="width: 200px"
           @keyup.enter="handleQuery"
@@ -93,7 +93,7 @@
         </template></el-table-column
       >
       <el-table-column
-        label="编码"
+        label="商品编码"
         align="center"
         width="200"
         prop="productSn"
@@ -165,11 +165,17 @@
 
     <el-drawer v-model="drawer" title="商品信息" :with-header="false">
       <el-descriptions :title="productTitle" :column="2" border>
+        <el-descriptions-item label="商品图片">{{
+          product.mainImage
+        }}</el-descriptions-item>
         <el-descriptions-item label="编码">{{
           product.productSn
         }}</el-descriptions-item>
         <el-descriptions-item label="名称">{{
           product.productName
+        }}</el-descriptions-item>
+        <el-descriptions-item label="类别">{{
+          product.categoryName
         }}</el-descriptions-item>
         <el-descriptions-item label="价格">{{
           product.displayPrice

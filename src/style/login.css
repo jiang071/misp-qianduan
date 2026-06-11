@@ -13,8 +13,8 @@
   max-width: 100%;
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  grid-gap: 18rem;
-  padding: 0 2rem;
+  grid-gap: 15rem;
+  padding: 0 5rem;
 }
 
 .img {
@@ -24,7 +24,7 @@
 }
 
 .img img {
-  width: 500px;
+  width: 700px;
 }
 
 .login-box {
@@ -39,8 +39,7 @@
 }
 
 .avatar {
-  width: 350px;
-  height: 80px;
+  width: 150px;
 }
 
 .login-form h2 {

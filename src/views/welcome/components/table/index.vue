@@ -1,9 +1,34 @@
 <script setup lang="ts">
 import { useColumns } from "./columns";
-import { useRenderIcon } from "@/components/ReIcon/src/hooks";
+import { watch } from "vue";
+const {
+  loading,
+  columns,
+  dataList,
+  pagination,
+  Empty,
+  onCurrentChange,
+  getSalesRankingData,
+  dateRange: innerDateRange
+} = useColumns();
+const props = defineProps({
+  dateRange: {
+    type: [Array, null] as unknown as () => [string, string] | [],
+    default: () => []
+  }
+});
+watch(
+  () => props.dateRange,
+  val => {
+    innerDateRange.value = val;
+  },
+  { deep: true, immediate: true }
+);
 
-const { loading, columns, dataList, pagination, Empty, onCurrentChange } =
-  useColumns();
+// 暴露方法给父组件调用
+defineExpose({
+  getSalesRankingData
+});
 </script>
 
 <template>
@@ -13,12 +38,7 @@ const { loading, columns, dataList, pagination, Empty, onCurrentChange } =
     showOverflowTooltip
     :loading="loading"
     :loading-config="{ background: 'transparent' }"
-    :data="
-      dataList.slice(
-        (pagination.currentPage - 1) * pagination.pageSize,
-        pagination.currentPage * pagination.pageSize
-      )
-    "
+    :data="dataList"
     :columns="columns"
     :pagination="pagination"
     @page-current-change="onCurrentChange"
@@ -29,15 +49,6 @@ const { loading, columns, dataList, pagination, Empty, onCurrentChange } =
           <Empty />
         </template>
       </el-empty>
-    </template>
-    <template #operation="{ row }">
-      <el-button
-        plain
-        circle
-        size="small"
-        :title="`查看序号为${row.id}的详情`"
-        :icon="useRenderIcon('ri:search-line')"
-      />
     </template>
   </pure-table>
 </template>

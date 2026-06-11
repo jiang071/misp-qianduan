@@ -253,7 +253,7 @@
 import { ref, reactive, onMounted, nextTick } from "vue";
 import type { FormInstance } from "element-plus";
 import { ElMessage, ElMessageBox } from "element-plus";
-
+import { useRoute } from "vue-router";
 import {
   listOrderByPage,
   deleteOrderByOrderId,
@@ -267,10 +267,6 @@ import {
 import OrderForm from "./form.vue";
 import type { OrderQueryParams, Order, OrderItem } from "@/types/pos";
 
-onMounted(() => {
-  getOrderList();
-});
-
 // ====================== 查询区域 ======================
 const queryRef = ref<FormInstance>();
 const queryParams = reactive<OrderQueryParams>({
@@ -279,6 +275,14 @@ const queryParams = reactive<OrderQueryParams>({
   orderNo: undefined,
   username: undefined,
   orderStatus: undefined
+});
+const route = useRoute();
+onMounted(() => {
+  const status = route.query.orderStatus;
+  if (status) {
+    queryParams.orderStatus = Array.isArray(status) ? status[0] : status;
+  }
+  getOrderList();
 });
 
 // 查询
