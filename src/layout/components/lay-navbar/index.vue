@@ -1,26 +1,39 @@
 <script setup lang="ts">
 import { useNav } from "@/layout/hooks/useNav";
 import LaySearch from "../lay-search/index.vue";
-import LayNotice from "../lay-notice/index.vue";
 import LayNavMix from "../lay-sidebar/NavMix.vue";
 import LaySidebarFullScreen from "../lay-sidebar/components/SidebarFullScreen.vue";
 import LaySidebarBreadCrumb from "../lay-sidebar/components/SidebarBreadCrumb.vue";
 import LaySidebarTopCollapse from "../lay-sidebar/components/SidebarTopCollapse.vue";
-
+import { updateUser } from "@/api/system";
 import LogoutCircleRLine from "@iconify-icons/ri/logout-circle-r-line";
+import EditPen from "@iconify-icons/ep/edit-pen";
 import Setting from "@iconify-icons/ri/settings-3-line";
+import { ElMessage } from "element-plus";
+import CryptoJS from "crypto-js";
 
-const {
-  layout,
-  device,
-  logout,
-  onPanel,
-  pureApp,
-  username,
-  userAvatar,
-  avatarsStyle,
-  toggleSideBar
-} = useNav();
+const { layout, device, logout, onPanel, pureApp, username, toggleSideBar } =
+  useNav();
+function encryptPassword(password: string): string {
+  if (!password) return "";
+  const key = CryptoJS.enc.Utf8.parse("misp2024@scau!#1");
+  const iv = CryptoJS.enc.Utf8.parse("misp2024@scau!#1");
+  const encrypted = CryptoJS.AES.encrypt(password, key, {
+    iv: iv,
+    mode: CryptoJS.mode.CBC,
+    padding: CryptoJS.pad.Pkcs7
+  });
+  return encrypted.toString(); // 默认返回 Base64 字符串
+}
+// 修改密码
+const handleUpdatePassword = async () => {
+  try {
+    await updateUser({ password: "new_password" });
+    ElMessage.success("密码修改成功");
+  } catch (error) {
+    ElMessage.error("密码修改失败");
+  }
+};
 </script>
 
 <template>
@@ -44,16 +57,17 @@ const {
       <LaySearch id="header-search" />
       <!-- 全屏 -->
       <LaySidebarFullScreen id="full-screen" />
-      <!-- 消息通知 -->
-      <LayNotice id="header-notice" />
       <!-- 退出登录 -->
       <el-dropdown trigger="click">
         <span class="el-dropdown-link navbar-bg-hover select-none">
-          <img :src="userAvatar" :style="avatarsStyle" />
           <p v-if="username" class="dark:text-white">{{ username }}</p>
         </span>
         <template #dropdown>
           <el-dropdown-menu class="logout">
+            <el-dropdown-item @click="handleUpdatePassword">
+              <IconifyIconOffline :icon="EditPen" style="margin: 5px" />
+              修改密码
+            </el-dropdown-item>
             <el-dropdown-item @click="logout">
               <IconifyIconOffline
                 :icon="LogoutCircleRLine"
@@ -107,12 +121,6 @@ const {
 
       p {
         font-size: 14px;
-      }
-
-      img {
-        width: 22px;
-        height: 22px;
-        border-radius: 50%;
       }
     }
   }

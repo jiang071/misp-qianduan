@@ -1,5 +1,4 @@
 import { request } from "@/utils/request";
-import { stringify } from "qs";
 import { baseUrlApi } from "@/utils/request";
 import type { Order, OrderItem } from "@/types/pos";
 import { http } from "@/utils/http";
@@ -30,12 +29,7 @@ export function deleteOrderByOrderId(orderId: number) {
 // 批量删除订单
 export const deleteOrderBatch = (ids: number[]) => {
   return http.request<ApiResult>("delete", baseUrlApi("/pos/delete"), {
-    params: {
-      ids // 以数组形式传入，下面通过 paramsSerializer 序列化为重复的查询参数
-    },
-    paramsSerializer: {
-      serialize: params => stringify(params, { arrayFormat: "repeat" })
-    }
+    params: { ids }
   });
 };
 

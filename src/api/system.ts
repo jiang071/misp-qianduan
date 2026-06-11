@@ -1,5 +1,5 @@
 import { http } from "@/utils/http";
-
+import { request } from "@/utils/request";
 type Result = {
   success: boolean;
   data?: Array<any>;
@@ -20,14 +20,45 @@ type ResultTable = {
 };
 
 /** 获取系统管理-用户管理列表 */
-export const getUserList = (data?: object) => {
-  return http.request<ResultTable>("post", "/user", { data });
-};
-
+export function getUserList(params: any) {
+  return request({
+    url: "/user/pageList",
+    method: "get",
+    params: params
+  });
+}
+// 更新用户
+export function updateUser(data: any) {
+  return request({
+    url: "/user/update",
+    method: "post",
+    data: data
+  });
+}
+// 新增用户
+export function addUser(data: any) {
+  return request({
+    url: "/user/register",
+    method: "post",
+    data: data
+  });
+}
 /** 系统管理-用户管理-获取所有角色列表 */
-export const getAllRoleList = () => {
-  return http.request<Result>("get", "/list-all-role");
-};
+export function getAllRoleList() {
+  return request({
+    url: "/role/listAll",
+    method: "get"
+  });
+}
+
+// 删除用户
+export function deleteUser(ids: number[]) {
+  return request({
+    url: "user/deleteByIds",
+    method: "delete",
+    params: { ids: ids }
+  });
+}
 
 /** 系统管理-用户管理-根据userId，获取对应角色id列表（userId：用户id） */
 export const getRoleIds = (data?: object) => {

@@ -41,69 +41,60 @@ const systemManagementRouter = {
         title: "菜单管理",
         roles: ["admin"]
       }
-    },
-    {
-      path: "/system/dept/index",
-      name: "SystemDept",
-      meta: {
-        icon: "ri:git-branch-line",
-        title: "部门管理",
-        roles: ["admin"]
-      }
     }
   ]
 };
 
-const systemMonitorRouter = {
-  path: "/monitor",
-  meta: {
-    icon: "ep:monitor",
-    title: "系统监控",
-    rank: 2
-  },
-  children: [
-    {
-      path: "/monitor/online-user",
-      component: "monitor/online/index",
-      name: "OnlineUser",
-      meta: {
-        icon: "ri:user-voice-line",
-        title: "在线用户",
-        roles: ["admin"]
-      }
-    },
-    {
-      path: "/monitor/login-logs",
-      component: "monitor/logs/login/index",
-      name: "LoginLog",
-      meta: {
-        icon: "ri:window-line",
-        title: "登陆日志",
-        roles: ["admin"]
-      }
-    },
-    {
-      path: "/monitor/operation-logs",
-      component: "monitor/logs/operation/index",
-      name: "OperationLog",
-      meta: {
-        icon: "ri:history-fill",
-        title: "操作日志",
-        roles: ["admin"]
-      }
-    },
-    {
-      path: "/monitor/system-logs",
-      component: "monitor/logs/system/index",
-      name: "SystemLog",
-      meta: {
-        icon: "ri:file-search-line",
-        title: "系统日志",
-        roles: ["admin"]
-      }
-    }
-  ]
-};
+// const systemMonitorRouter = {
+//   path: "/monitor",
+//   meta: {
+//     icon: "ep:monitor",
+//     title: "系统监控",
+//     rank: 2
+//   },
+//   children: [
+//     {
+//       path: "/monitor/online-user",
+//       component: "monitor/online/index",
+//       name: "OnlineUser",
+//       meta: {
+//         icon: "ri:user-voice-line",
+//         title: "在线用户",
+//         roles: ["admin"]
+//       }
+//     },
+//     {
+//       path: "/monitor/login-logs",
+//       component: "monitor/logs/login/index",
+//       name: "LoginLog",
+//       meta: {
+//         icon: "ri:window-line",
+//         title: "登陆日志",
+//         roles: ["admin"]
+//       }
+//     },
+//     {
+//       path: "/monitor/operation-logs",
+//       component: "monitor/logs/operation/index",
+//       name: "OperationLog",
+//       meta: {
+//         icon: "ri:history-fill",
+//         title: "操作日志",
+//         roles: ["admin"]
+//       }
+//     },
+//     {
+//       path: "/monitor/system-logs",
+//       component: "monitor/logs/system/index",
+//       name: "SystemLog",
+//       meta: {
+//         icon: "ri:file-search-line",
+//         title: "系统日志",
+//         roles: ["admin"]
+//       }
+//     }
+//   ]
+// };
 
 const permissionRouter = {
   path: "/permission",
@@ -165,7 +156,7 @@ export default defineFakeRoute([
     response: () => {
       return {
         success: true,
-        data: [systemManagementRouter, systemMonitorRouter, permissionRouter]
+        data: [systemManagementRouter, permissionRouter]
       };
     }
   }

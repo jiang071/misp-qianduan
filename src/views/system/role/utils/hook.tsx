@@ -73,11 +73,6 @@ export function useRole(treeRef: Ref) {
       minWidth: 90
     },
     {
-      label: "备注",
-      prop: "remark",
-      minWidth: 160
-    },
-    {
       label: "创建时间",
       prop: "createTime",
       minWidth: 160,
