@@ -99,10 +99,11 @@ export function deleteRole(id: number) {
   });
 }
 /** 获取系统管理-菜单管理列表 */
-export function getMenuList() {
+export function getMenuList(params?: any) {
   return request({
     url: "/route/getRouteTree",
-    method: "get"
+    method: "get",
+    params: params
   });
 }
 
@@ -129,6 +130,50 @@ export function getAllPermissionList() {
   return request({
     url: "/permission/listAll",
     method: "get"
+  });
+}
+
+//分页查询权限列表
+export function getAllPermissionListByPage(params: any) {
+  return request({
+    url: "/permission/list",
+    method: "get",
+    params: params
+  });
+}
+
+// 新增权限
+export function addPermission(data: any) {
+  return request({
+    url: "/permission/add",
+    method: "post",
+    data: data
+  });
+}
+
+//更新权限
+export function updatePermission(data: any) {
+  return request({
+    url: "/permission/update",
+    method: "put",
+    data: data
+  });
+}
+
+//删除权限
+export function deletePermission(id: number) {
+  return request({
+    url: "/permission/" + id,
+    method: "delete"
+  });
+}
+
+//批量删除权限
+export function deletePermissions(ids: number[]) {
+  return request({
+    url: "/permission/batch",
+    method: "delete",
+    data: ids
   });
 }
 /** 获取系统管理-部门管理列表 */

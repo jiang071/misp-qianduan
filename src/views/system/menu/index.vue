@@ -65,7 +65,7 @@ function onFullscreen() {
     </el-form>
 
     <PureTableBar
-      title="菜单管理（仅演示，操作后不生效）"
+      title="菜单管理"
       :columns="columns"
       :isExpandAll="false"
       :tableRef="tableRef?.getTableRef()"
@@ -76,6 +76,7 @@ function onFullscreen() {
         <el-button
           type="primary"
           :icon="useRenderIcon(AddFill)"
+          disabled
           @click="openDialog()"
         >
           新增菜单
@@ -107,20 +108,10 @@ function onFullscreen() {
               type="primary"
               :size="size"
               :icon="useRenderIcon(EditPen)"
+              disabled
               @click="openDialog('修改', row)"
             >
               修改
-            </el-button>
-            <el-button
-              v-show="row.menuType !== 3"
-              class="reset-margin"
-              link
-              type="primary"
-              :size="size"
-              :icon="useRenderIcon(AddFill)"
-              @click="openDialog('新增', { parentId: row.id } as any)"
-            >
-              新增
             </el-button>
             <el-popconfirm
               :title="`是否确认删除菜单名称为${row.title}的这条数据${row?.children?.length > 0 ? '。注意下级菜单也会一并删除，请谨慎操作' : ''}`"
@@ -133,6 +124,7 @@ function onFullscreen() {
                   type="primary"
                   :size="size"
                   :icon="useRenderIcon(Delete)"
+                  disabled
                 >
                   删除
                 </el-button>

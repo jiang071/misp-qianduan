@@ -41,6 +41,15 @@ const systemManagementRouter = {
         title: "菜单管理",
         roles: ["admin"]
       }
+    },
+    {
+      path: "/system/permission/index",
+      name: "SystemPermission",
+      meta: {
+        icon: "ep:lollipop",
+        title: "权限管理",
+        roles: ["admin"]
+      }
     }
   ]
 };
@@ -96,58 +105,58 @@ const systemManagementRouter = {
 //   ]
 // };
 
-const permissionRouter = {
-  path: "/permission",
-  meta: {
-    title: "权限管理",
-    icon: "ep:lollipop",
-    rank: 97
-  },
-  children: [
-    {
-      path: "/permission/page/index",
-      name: "PermissionPage",
-      meta: {
-        icon: "ep:eleme",
-        title: "页面权限",
-        roles: ["admin", "common"]
-      }
-    },
-    {
-      path: "/permission/button",
-      meta: {
-        icon: "ep:open",
-        title: "按钮权限",
-        roles: ["admin", "common"]
-      },
-      children: [
-        {
-          path: "/permission/button/router",
-          component: "permission/button/index",
-          name: "PermissionButtonRouter",
-          meta: {
-            icon: "ep:rank",
-            title: "路由返回按钮权限",
-            auths: [
-              "permission:btn:add",
-              "permission:btn:edit",
-              "permission:btn:delete"
-            ]
-          }
-        },
-        {
-          path: "/permission/button/login",
-          component: "permission/button/perms",
-          name: "PermissionButtonLogin",
-          meta: {
-            icon: "ep:unlock",
-            title: "登录接口返回按钮权限"
-          }
-        }
-      ]
-    }
-  ]
-};
+// const permissionRouter = {
+//   path: "/permission",
+//   meta: {
+//     title: "权限管理",
+//     icon: "ep:lollipop",
+//     rank: 97
+//   },
+//   children: [
+//     {
+//       path: "/permission/page/index",
+//       name: "PermissionPage",
+//       meta: {
+//         icon: "ep:eleme",
+//         title: "页面权限",
+//         roles: ["admin", "common"]
+//       }
+//     },
+//     {
+//       path: "/permission/button",
+//       meta: {
+//         icon: "ep:open",
+//         title: "按钮权限",
+//         roles: ["admin", "common"]
+//       },
+//       children: [
+//         {
+//           path: "/permission/button/router",
+//           component: "permission/button/index",
+//           name: "PermissionButtonRouter",
+//           meta: {
+//             icon: "ep:rank",
+//             title: "路由返回按钮权限",
+//             auths: [
+//               "permission:btn:add",
+//               "permission:btn:edit",
+//               "permission:btn:delete"
+//             ]
+//           }
+//         },
+//         {
+//           path: "/permission/button/login",
+//           component: "permission/button/perms",
+//           name: "PermissionButtonLogin",
+//           meta: {
+//             icon: "ep:unlock",
+//             title: "登录接口返回按钮权限"
+//           }
+//         }
+//       ]
+//     }
+//   ]
+// };
 
 export default defineFakeRoute([
   {
@@ -156,7 +165,7 @@ export default defineFakeRoute([
     response: () => {
       return {
         success: true,
-        data: [systemManagementRouter, permissionRouter]
+        data: [systemManagementRouter]
       };
     }
   }
