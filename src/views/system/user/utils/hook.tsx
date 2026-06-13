@@ -185,7 +185,6 @@ export function useUser(tableRef: Ref) {
             id: row.id,
             status: newStatus
           };
-          console.log(updateData);
           await updateUser(updateData);
           message("修改用户状态成功", { type: "success" });
           onSearch();

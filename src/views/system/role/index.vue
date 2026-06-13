@@ -46,6 +46,7 @@ const formRef = ref();
 const tableRef = ref();
 const contentRef = ref();
 const treeHeight = ref();
+const activeTab = ref("menu");
 
 const {
   form,
@@ -67,26 +68,36 @@ const {
   resetForm,
   openDialog,
   handleMenu,
-  handleSave,
   handleDelete,
   filterMethod,
   onQueryChanged,
   // handleDatabase,
   handleSizeChange,
   handleCurrentChange,
-  handleSelectionChange
+  handleSelectionChange,
+  permTreeRef,
+  permTreeData,
+  permTreeProps,
+  permSearchValue,
+  permIsExpandAll,
+  permIsSelectAll,
+  permIsLinkage,
+  saveMenuPermissions,
+  savePermissionPermissions,
+  onPermQueryChanged,
+  permFilterMethod
 } = useRole(treeRef);
 
-onMounted(() => {
-  useResizeObserver(contentRef, async () => {
-    await nextTick();
-    delay(60).then(() => {
-      treeHeight.value = parseFloat(
-        subBefore(tableRef.value.getTableDoms().tableWrapper.style.height, "px")
-      );
-    });
-  });
-});
+// onMounted(() => {
+//   useResizeObserver(contentRef, async () => {
+//     await nextTick();
+//     delay(60).then(() => {
+//       treeHeight.value = parseFloat(
+//         subBefore(tableRef.value.getTableDoms().tableWrapper.style.height, "px")
+//       );
+//     });
+//   });
+// });
 </script>
 
 <template>
@@ -97,17 +108,17 @@ onMounted(() => {
       :model="form"
       class="search-form bg-bg_color w-[99/100] pl-8 pt-[12px] overflow-auto"
     >
-      <el-form-item label="角色名称：" prop="name">
+      <el-form-item label="角色名称：" prop="roleName">
         <el-input
-          v-model="form.name"
+          v-model="form.roleName"
           placeholder="请输入角色名称"
           clearable
           class="!w-[180px]"
         />
       </el-form-item>
-      <el-form-item label="角色标识：" prop="code">
+      <el-form-item label="角色标识：" prop="roleCode">
         <el-input
-          v-model="form.code"
+          v-model="form.roleCode"
           placeholder="请输入角色标识"
           clearable
           class="!w-[180px]"
@@ -193,7 +204,7 @@ onMounted(() => {
                 修改
               </el-button>
               <el-popconfirm
-                :title="`是否确认删除角色名称为${row.name}的这条数据`"
+                :title="`是否确认删除角色名称为${row.roleName}的这条数据`"
                 @confirm="handleDelete(row)"
               >
                 <template #reference>
@@ -278,49 +289,75 @@ onMounted(() => {
                 @click="handleMenu"
               />
             </span>
-            <span :class="[iconClass, 'ml-2']">
-              <IconifyIconOffline
-                v-tippy="{
-                  content: '保存菜单权限'
-                }"
-                class="dark:text-white"
-                width="18px"
-                height="18px"
-                :icon="Check"
-                @click="handleSave"
-              />
-            </span>
           </div>
-          <p class="font-bold truncate">
-            菜单权限
-            {{ `${curRow?.name ? `（${curRow.name}）` : ""}` }}
-          </p>
+          <p class="font-bold truncate">权限配置 - {{ curRow?.roleName }}</p>
         </div>
-        <el-input
-          v-model="treeSearchValue"
-          placeholder="请输入菜单进行搜索"
-          class="mb-1"
-          clearable
-          @input="onQueryChanged"
-        />
-        <div class="flex flex-wrap">
-          <el-checkbox v-model="isExpandAll" label="展开/折叠" />
-          <el-checkbox v-model="isSelectAll" label="全选/全不选" />
-          <el-checkbox v-model="isLinkage" label="父子联动" />
-        </div>
-        <el-tree-v2
-          ref="treeRef"
-          show-checkbox
-          :data="treeData"
-          :props="treeProps"
-          :height="treeHeight"
-          :check-strictly="!isLinkage"
-          :filter-method="filterMethod"
-        >
-          <template #default="{ node }">
-            <span>{{ node.label }}</span>
-          </template>
-        </el-tree-v2>
+        <el-tabs v-model="activeTab" class="permission-tabs">
+          <el-tab-pane label="菜单权限" name="menu">
+            <el-input
+              v-model="treeSearchValue"
+              placeholder="请输入菜单进行搜索"
+              class="mb-1"
+              clearable
+              @input="onQueryChanged"
+            />
+            <div class="flex flex-wrap">
+              <el-checkbox v-model="isExpandAll" label="展开/折叠" />
+              <el-checkbox v-model="isSelectAll" label="全选/全不选" />
+              <el-checkbox v-model="isLinkage" label="父子联动" />
+            </div>
+            <el-tree-v2
+              ref="treeRef"
+              show-checkbox
+              :data="treeData"
+              :props="treeProps"
+              :height="treeHeight"
+              :check-strictly="!isLinkage"
+              :filter-method="filterMethod"
+            >
+              <template #default="{ node }">
+                <span>{{ node.label }}</span>
+              </template>
+            </el-tree-v2>
+            <div class="mt-4 flex justify-center">
+              <el-button type="primary" @click="saveMenuPermissions"
+                >确定更改</el-button
+              >
+            </div>
+          </el-tab-pane>
+          <el-tab-pane label="接口权限" name="permission">
+            <el-input
+              v-model="permSearchValue"
+              placeholder="请输入权限名称进行搜索"
+              clearable
+              class="mb-1"
+              @input="onPermQueryChanged"
+            />
+            <div class="flex flex-wrap">
+              <el-checkbox v-model="permIsExpandAll" label="展开/折叠" />
+              <el-checkbox v-model="permIsSelectAll" label="全选/全不选" />
+              <el-checkbox v-model="permIsLinkage" label="父子联动" />
+            </div>
+            <el-tree-v2
+              ref="permTreeRef"
+              show-checkbox
+              :data="permTreeData"
+              :props="permTreeProps"
+              :height="treeHeight"
+              :check-strictly="!permIsLinkage"
+              :filter-method="permFilterMethod"
+            >
+              <template #default="{ node }">
+                <span>{{ node.label }}</span>
+              </template>
+            </el-tree-v2>
+            <div class="mt-4 flex justify-center">
+              <el-button type="primary" @click="savePermissionPermissions"
+                >确定更改</el-button
+              >
+            </div>
+          </el-tab-pane>
+        </el-tabs>
       </div>
     </div>
   </div>

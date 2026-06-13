@@ -66,15 +66,71 @@ export const getRoleIds = (data?: object) => {
 };
 
 /** 获取系统管理-角色管理列表 */
-export const getRoleList = (data?: object) => {
-  return http.request<ResultTable>("post", "/role", { data });
-};
+export function getRoleList(params: any) {
+  return request({
+    url: "/role/listRole",
+    method: "get",
+    params: params
+  });
+}
 
+// 新增角色
+export function addRole(data: any) {
+  return request({
+    url: "/role/add",
+    method: "post",
+    data: data
+  });
+}
+
+//更新角色
+export function updateRole(data: any) {
+  return request({
+    url: "/role/update",
+    method: "put",
+    data: data
+  });
+}
+//删除角色
+export function deleteRole(id: number) {
+  return request({
+    url: "/role/" + id,
+    method: "delete"
+  });
+}
 /** 获取系统管理-菜单管理列表 */
-export const getMenuList = (data?: object) => {
-  return http.request<Result>("post", "/menu", { data });
-};
+export function getMenuList() {
+  return request({
+    url: "/route/getRouteTree",
+    method: "get"
+  });
+}
 
+// 更新角色菜单
+export function updateRoleMenus(data: any) {
+  return request({
+    url: "/route/assignRoutesToRole",
+    method: "post",
+    data: data
+  });
+}
+
+// 更新角色权限
+export function updateRolePermissions(data: any) {
+  return request({
+    url: "/permission/assignPermissionsToRole",
+    method: "post",
+    data: data
+  });
+}
+
+//全部权限列表
+export function getAllPermissionList() {
+  return request({
+    url: "/permission/listAll",
+    method: "get"
+  });
+}
 /** 获取系统管理-部门管理列表 */
 export const getDeptList = (data?: object) => {
   return http.request<Result>("post", "/dept", { data });
