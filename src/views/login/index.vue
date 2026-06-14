@@ -2,7 +2,7 @@
 import Motion from "./utils/motion";
 import { useRouter } from "vue-router";
 import { message } from "@/utils/message";
-import { loginRules } from "./utils/rule";
+import { loginRules } from "@/utils/rule";
 import type { FormInstance } from "element-plus";
 import { useLayout } from "@/layout/hooks/useLayout";
 import { useUserStoreHook } from "@/store/modules/user";
@@ -51,7 +51,7 @@ const onLogin = async (formEl: FormInstance | undefined) => {
             password: encryptedPassword
           })
           .then(res => {
-            if (res.success) {
+            if (res.code === 200) {
               // 获取后端路由
               return initRouter().then(() => {
                 router.push(getTopMenu(true).path).then(() => {
@@ -59,7 +59,7 @@ const onLogin = async (formEl: FormInstance | undefined) => {
                 });
               });
             } else {
-              message("登录失败", { type: "error" });
+              message(res.message || "登录失败", { type: "error" });
             }
           })
           .finally(() => (loading.value = false));

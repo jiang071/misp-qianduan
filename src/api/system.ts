@@ -35,6 +35,14 @@ export function updateUser(data: any) {
     data: data
   });
 }
+export function updateUserPassword(params: any) {
+  return request({
+    url: "/user/updatePassword",
+    method: "post",
+    params: params
+  });
+}
+
 // 新增用户
 export function addUser(data: any) {
   return request({

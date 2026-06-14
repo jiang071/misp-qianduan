@@ -9,12 +9,24 @@ export interface DataInfo<T> {
   expires: T;
   /** 用于调用刷新accessToken的接口时所需的token */
   refreshToken: string;
+  /** 用户数字id */
+  id?: number;
+  /** 用户id */
+  userId?: string;
   /** 头像 */
   avatar?: string;
   /** 用户名 */
   username?: string;
   /** 昵称 */
   nickname?: string;
+  /** 手机号 */
+  phone?: string;
+  /** 状态 */
+  status?: number;
+  /** 角色id列表 */
+  roleIdList?: Array<number>;
+  /** 角色编码列表 */
+  roleCodeList?: Array<string>;
   /** 当前登录用户的角色 */
   roles?: Array<string>;
   /** 当前登录用户的按钮级别权限 */
@@ -68,47 +80,82 @@ export function setToken(data: DataInfo<Date>) {
       : {}
   );
 
-  function setUserKey({ avatar, username, nickname, roles, permissions }) {
+  function setUserKey({
+    id,
+    userId,
+    avatar,
+    username,
+    nickname,
+    phone,
+    status,
+    roleIdList,
+    roleCodeList,
+    roles,
+    permissions
+  }) {
+    useUserStoreHook().SET_ID(id);
+    useUserStoreHook().SET_USERID(userId);
     useUserStoreHook().SET_AVATAR(avatar);
     useUserStoreHook().SET_USERNAME(username);
     useUserStoreHook().SET_NICKNAME(nickname);
+    useUserStoreHook().SET_PHONE(phone);
+    useUserStoreHook().SET_STATUS(status);
+    useUserStoreHook().SET_ROLEIDLIST(roleIdList);
+    useUserStoreHook().SET_ROLECODELIST(roleCodeList);
     useUserStoreHook().SET_ROLES(roles);
     useUserStoreHook().SET_PERMS(permissions);
     storageLocal().setItem(userKey, {
       refreshToken,
       expires,
+      id,
+      userId,
       avatar,
       username,
       nickname,
+      phone,
+      status,
+      roleIdList,
+      roleCodeList,
       roles,
       permissions
     });
   }
 
-  if (data.username && data.roles) {
-    const { username, roles } = data;
+  if (data.userId || data.username) {
     setUserKey({
+      id: data?.id ?? 0,
+      userId: data?.userId ?? "",
       avatar: data?.avatar ?? "",
-      username,
+      username: data?.username ?? data?.userId ?? "",
       nickname: data?.nickname ?? "",
-      roles,
+      phone: data?.phone ?? "",
+      status: data?.status ?? 0,
+      roleIdList: data?.roleIdList ?? [],
+      roleCodeList: data?.roleCodeList ?? [],
+      roles: data?.roleCodeList ?? [],
       permissions: data?.permissions ?? []
     });
   } else {
-    const avatar =
-      storageLocal().getItem<DataInfo<number>>(userKey)?.avatar ?? "";
-    const username =
-      storageLocal().getItem<DataInfo<number>>(userKey)?.username ?? "";
-    const nickname =
-      storageLocal().getItem<DataInfo<number>>(userKey)?.nickname ?? "";
-    const roles =
-      storageLocal().getItem<DataInfo<number>>(userKey)?.roles ?? [];
-    const permissions =
-      storageLocal().getItem<DataInfo<number>>(userKey)?.permissions ?? [];
+    const userInfo = storageLocal().getItem<DataInfo<number>>(userKey);
+    const avatar = userInfo?.avatar ?? "";
+    const username = userInfo?.username ?? userInfo?.userId ?? "";
+    const nickname = userInfo?.nickname ?? "";
+    const phone = userInfo?.phone ?? "";
+    const status = userInfo?.status ?? 0;
+    const roleIdList = userInfo?.roleIdList ?? [];
+    const roleCodeList = userInfo?.roleCodeList ?? [];
+    const roles = userInfo?.roles ?? userInfo?.roleCodeList ?? [];
+    const permissions = userInfo?.permissions ?? [];
     setUserKey({
+      id: userInfo?.id ?? 0,
+      userId: userInfo?.userId ?? "",
       avatar,
       username,
       nickname,
+      phone,
+      status,
+      roleIdList,
+      roleCodeList,
       roles,
       permissions
     });

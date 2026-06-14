@@ -13,7 +13,7 @@ import { stringify } from "qs";
 import NProgress from "../progress";
 import { getToken, formatToken } from "@/utils/auth";
 import { useUserStoreHook } from "@/store/modules/user";
-
+import { ElMessage } from "element-plus";
 // 相关配置请参考：www.axios-js.com/zh-cn/docs/#axios-request-config-1
 const defaultConfig: AxiosRequestConfig = {
   // 请求超时时间
@@ -73,7 +73,7 @@ class PureHttp {
           return config;
         }
         /** 请求白名单，放置一些不需要`token`的接口（通过设置请求白名单，防止`token`过期后再请求造成的死循环问题） */
-        const whiteList = ["/refresh-token", "/login"];
+        const whiteList = ["/user/refreshToken", "/user/login"];
         return whiteList.some(url => config.url.endsWith(url))
           ? config
           : new Promise(resolve => {
@@ -139,6 +139,15 @@ class PureHttp {
         $error.isCancelRequest = Axios.isCancel($error);
         // 关闭进度条动画
         NProgress.done();
+
+        // 处理 HTTP 状态码 403 无权限错误
+        if ($error.response && $error.response.status === 403) {
+          // 只显示友好提示，不再抛出错误
+          ElMessage.error("你没有该功能权限");
+          // 返回一个 resolved 的 Promise，避免未处理的 Promise 拒绝
+          return Promise.resolve({ code: 403, message: "你没有该功能权限" });
+        }
+
         // 所有的响应异常 区分来源为取消请求/非取消请求
         return Promise.reject($error);
       }
