@@ -1,107 +1,133 @@
 <script setup lang="ts">
-import { ref } from "vue";
-import { useUser } from "./utils/hook";
+import { useRole } from "./utils/hook";
+import { ref, computed, nextTick, onMounted } from "vue";
 import { PureTableBar } from "@/components/RePureTableBar";
 import { useRenderIcon } from "@/components/ReIcon/src/hooks";
+import { deviceDetection } from "@pureadmin/utils";
+
+// import Database from "@iconify-icons/ri/database-2-line";
+// import More from "@iconify-icons/ep/more-filled";
 import Delete from "@iconify-icons/ep/delete";
 import EditPen from "@iconify-icons/ep/edit-pen";
 import Refresh from "@iconify-icons/ep/refresh";
 import AddFill from "@iconify-icons/ri/add-circle-line";
 
 defineOptions({
-  name: "SystemUser"
+  name: "SystemPermission"
 });
 
-const formRef = ref();
+const iconClass = computed(() => {
+  return [
+    "w-[22px]",
+    "h-[22px]",
+    "flex",
+    "justify-center",
+    "items-center",
+    "outline-none",
+    "rounded-[4px]",
+    "cursor-pointer",
+    "transition-colors",
+    "hover:bg-[#0000000f]",
+    "dark:hover:bg-[#ffffff1f]",
+    "dark:hover:text-[#ffffffd9]"
+  ];
+});
+
 const tableRef = ref();
+const formRef = ref();
 
 const {
   form,
+  isShow,
   loading,
   columns,
+  rowStyle,
   dataList,
-  selectedNum,
   pagination,
-  deviceDetection,
+  // buttonClass,
   onSearch,
   resetForm,
-  onbatchDel,
   openDialog,
   handleDelete,
+  filterMethod,
+  // handleDatabase,
   handleSizeChange,
-  onSelectionCancel,
   handleCurrentChange,
-  handleSelectionChange
-} = useUser(tableRef);
+  handleSelectionChange,
+  selectedNum,
+  onSelectionCancel,
+  onbatchDel
+} = useRole(tableRef);
+
+// onMounted(() => {
+//   useResizeObserver(contentRef, async () => {
+//     await nextTick();
+//     delay(60).then(() => {
+//       treeHeight.value = parseFloat(
+//         subBefore(tableRef.value.getTableDoms().tableWrapper.style.height, "px")
+//       );
+//     });
+//   });
+// });
 </script>
 
 <template>
-  <div :class="['flex', 'justify-between', deviceDetection() && 'flex-wrap']">
-    <div :class="[deviceDetection() ? ['w-full', 'mt-2'] : 'w-[100%]']">
-      <el-form
-        ref="formRef"
-        :inline="true"
-        :model="form"
-        class="search-form bg-bg_color w-[99/100] pl-8 pt-[12px] overflow-auto"
-      >
-        <el-form-item label="用户昵称：" prop="nickname">
-          <el-input
-            v-model="form.nickname"
-            placeholder="请输入用户昵称"
-            clearable
-            class="!w-[150px]"
-          />
-        </el-form-item>
-        <el-form-item label="用户账号：" prop="userId">
-          <el-input
-            v-model="form.userId"
-            placeholder="请输入用户账号"
-            clearable
-            class="!w-[150px]"
-          />
-        </el-form-item>
-        <el-form-item label="手机号码：" prop="phone">
-          <el-input
-            v-model="form.phone"
-            placeholder="请输入手机号码"
-            clearable
-            class="!w-[180px]"
-          />
-        </el-form-item>
-        <el-form-item label="状态：" prop="status">
-          <el-select
-            v-model="form.status"
-            placeholder="请选择"
-            clearable
-            class="!w-[100px]"
-          >
-            <el-option label="已开启" value="1" />
-            <el-option label="已停用" value="0" />
-          </el-select>
-        </el-form-item>
-        <el-form-item>
-          <el-button
-            type="primary"
-            :icon="useRenderIcon('ri:search-line')"
-            :loading="loading"
-            @click="onSearch"
-          >
-            搜索
-          </el-button>
-          <el-button :icon="useRenderIcon(Refresh)" @click="resetForm(formRef)">
-            重置
-          </el-button>
-        </el-form-item>
-      </el-form>
+  <div class="main">
+    <el-form
+      ref="formRef"
+      :inline="true"
+      :model="form"
+      class="search-form bg-bg_color w-[99/100] pl-8 pt-[12px] overflow-auto"
+    >
+      <el-form-item label="权限名称：" prop="permName">
+        <el-input
+          v-model="form.permName"
+          placeholder="请输入权限名称"
+          clearable
+          class="!w-[180px]"
+        />
+      </el-form-item>
+      <el-form-item label="类型名称：" prop="typeName">
+        <el-input
+          v-model="form.typeName"
+          placeholder="请输入权限名称"
+          clearable
+          class="!w-[180px]"
+        />
+      </el-form-item>
+      <el-form-item>
+        <el-button
+          type="primary"
+          :icon="useRenderIcon('ri:search-line')"
+          :loading="loading"
+          @click="onSearch"
+        >
+          搜索
+        </el-button>
+        <el-button :icon="useRenderIcon(Refresh)" @click="resetForm(formRef)">
+          重置
+        </el-button>
+      </el-form-item>
+    </el-form>
 
-      <PureTableBar title="用户管理" :columns="columns" @refresh="onSearch">
+    <div
+      ref="contentRef"
+      :class="['flex', deviceDetection() ? 'flex-wrap' : '']"
+    >
+      <PureTableBar
+        :class="[isShow && !deviceDetection() ? '!w-[60vw]' : 'w-full']"
+        style="transition: width 220ms cubic-bezier(0.4, 0, 0.2, 1)"
+        title="权限管理"
+        :columns="columns"
+        @refresh="onSearch"
+      >
         <template #buttons>
           <el-button
             type="primary"
             :icon="useRenderIcon(AddFill)"
             @click="openDialog()"
           >
-            新增用户
+            新增权限
           </el-button>
         </template>
         <template v-slot="{ size, dynamicColumns }">
@@ -131,13 +157,15 @@ const {
           </div>
           <pure-table
             ref="tableRef"
-            row-key="id"
-            adaptive
-            :adaptiveConfig="{ offsetBottom: 108 }"
             align-whole="center"
+            row-key="id"
+            showOverflowTooltip
             table-layout="auto"
             :loading="loading"
             :size="size"
+            adaptive
+            :row-style="rowStyle"
+            :adaptiveConfig="{ offsetBottom: 108 }"
             :data="dataList"
             :columns="dynamicColumns"
             :pagination="{ ...pagination, size }"
@@ -161,7 +189,7 @@ const {
                 修改
               </el-button>
               <el-popconfirm
-                :title="`是否确认删除用户编号为${row.id}的这条数据`"
+                :title="`是否确认删除权限名称为${row.permName}的这条数据`"
                 @confirm="handleDelete(row)"
               >
                 <template #reference>
@@ -187,10 +215,6 @@ const {
 <style scoped lang="scss">
 :deep(.el-dropdown-menu__item i) {
   margin: 0;
-}
-
-:deep(.el-button:focus-visible) {
-  outline: none;
 }
 
 .main-content {

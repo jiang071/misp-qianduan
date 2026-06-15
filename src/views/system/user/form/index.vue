@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref, watch } from "vue";
 import ReCol from "@/components/ReCol";
 import { formRules } from "../utils/rule";
 import { FormProps } from "../utils/types";
@@ -8,38 +8,38 @@ import { usePublicHooks } from "../../hooks";
 const props = withDefaults(defineProps<FormProps>(), {
   formInline: () => ({
     title: "新增",
-    higherDeptOptions: [],
-    parentId: 0,
+    id: undefined,
     nickname: "",
-    username: "",
+    userId: "",
     password: "",
     phone: "",
-    email: "",
-    sex: "",
     status: 1,
-    remark: ""
+    roleCodeList: [],
+    roleIdList: [],
+    roleOptions: []
   })
 });
 
-const sexOptions = [
-  {
-    value: 0,
-    label: "男"
-  },
-  {
-    value: 1,
-    label: "女"
-  }
-];
 const ruleFormRef = ref();
 const { switchStyle } = usePublicHooks();
 const newFormInline = ref(props.formInline);
+// 监听外部 props 变化（弹窗每次打开会重新传入）
+watch(
+  () => props.formInline,
+  val => {
+    newFormInline.value = { ...val };
+  },
+  { deep: true, immediate: true }
+);
 
 function getRef() {
   return ruleFormRef.value;
 }
 
-defineExpose({ getRef });
+defineExpose({
+  getRef,
+  formData: newFormInline
+});
 </script>
 
 <template>
@@ -60,9 +60,9 @@ defineExpose({ getRef });
         </el-form-item>
       </re-col>
       <re-col :value="12" :xs="24" :sm="24">
-        <el-form-item label="用户名称" prop="username">
+        <el-form-item label="用户账号" prop="userId">
           <el-input
-            v-model="newFormInline.username"
+            v-model="newFormInline.userId"
             clearable
             placeholder="请输入用户名称"
           />
@@ -93,56 +93,6 @@ defineExpose({ getRef });
         </el-form-item>
       </re-col>
 
-      <re-col :value="12" :xs="24" :sm="24">
-        <el-form-item label="邮箱" prop="email">
-          <el-input
-            v-model="newFormInline.email"
-            clearable
-            placeholder="请输入邮箱"
-          />
-        </el-form-item>
-      </re-col>
-      <re-col :value="12" :xs="24" :sm="24">
-        <el-form-item label="用户性别">
-          <el-select
-            v-model="newFormInline.sex"
-            placeholder="请选择用户性别"
-            class="w-full"
-            clearable
-          >
-            <el-option
-              v-for="(item, index) in sexOptions"
-              :key="index"
-              :label="item.label"
-              :value="item.value"
-            />
-          </el-select>
-        </el-form-item>
-      </re-col>
-
-      <re-col :value="12" :xs="24" :sm="24">
-        <el-form-item label="归属部门">
-          <el-cascader
-            v-model="newFormInline.parentId"
-            class="w-full"
-            :options="newFormInline.higherDeptOptions"
-            :props="{
-              value: 'id',
-              label: 'name',
-              emitPath: false,
-              checkStrictly: true
-            }"
-            clearable
-            filterable
-            placeholder="请选择归属部门"
-          >
-            <template #default="{ node, data }">
-              <span>{{ data.name }}</span>
-              <span v-if="!node.isLeaf"> ({{ data.children.length }}) </span>
-            </template>
-          </el-cascader>
-        </el-form-item>
-      </re-col>
       <re-col
         v-if="newFormInline.title === '新增'"
         :value="12"
@@ -161,14 +111,22 @@ defineExpose({ getRef });
           />
         </el-form-item>
       </re-col>
-
-      <re-col>
-        <el-form-item label="备注">
-          <el-input
-            v-model="newFormInline.remark"
-            placeholder="请输入备注信息"
-            type="textarea"
-          />
+      <re-col :value="12" :xs="24" :sm="24">
+        <el-form-item label="用户角色" prop="roleIdList">
+          <el-select
+            v-model="newFormInline.roleIdList"
+            multiple
+            clearable
+            placeholder="请选择用户角色"
+            class="w-full"
+          >
+            <el-option
+              v-for="item in newFormInline.roleOptions"
+              :key="item.id"
+              :label="item.roleName"
+              :value="item.id"
+            />
+          </el-select>
         </el-form-item>
       </re-col>
     </el-row>

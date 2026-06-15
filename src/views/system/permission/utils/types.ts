@@ -2,16 +2,14 @@
 
 interface FormItemProps {
   id?: number;
-  /** 角色名称 */
-  roleName: string;
-  /** 角色编号 */
-  roleCode: string;
-  /** 角色状态 */
-  status?: number;
+  permName: string;
+  permCode: string;
+  permType: string;
+  typeName: string;
+  remark: string;
 }
 interface FormProps {
   formInline: FormItemProps;
-  showStatus?: boolean;
 }
 
 export type { FormItemProps, FormProps };

@@ -25,4 +25,27 @@ const loginRules = reactive(<FormRules>{
   ]
 });
 
-export { loginRules };
+/** 修改密码校验（confirmPassword 需要在组件中单独处理） */
+const passwordRules = reactive(<FormRules>{
+  newPassword: [
+    {
+      required: true,
+      message: "请输入新密码",
+      trigger: "blur"
+    },
+    {
+      validator: (rule, value, callback) => {
+        if (!REGEXP_PWD.test(value)) {
+          callback(
+            new Error("密码格式应为8-18位数字、字母、符号的任意两种组合")
+          );
+        } else {
+          callback();
+        }
+      },
+      trigger: "blur"
+    }
+  ]
+});
+
+export { loginRules, passwordRules };

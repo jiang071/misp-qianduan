@@ -2,7 +2,7 @@
 import Motion from "./utils/motion";
 import { useRouter } from "vue-router";
 import { message } from "@/utils/message";
-import { loginRules } from "./utils/rule";
+import { loginRules } from "@/utils/rule";
 import type { FormInstance } from "element-plus";
 import { useLayout } from "@/layout/hooks/useLayout";
 import { useUserStoreHook } from "@/store/modules/user";
@@ -11,6 +11,8 @@ import { bg, avatar, logo } from "./utils/static";
 import { useRenderIcon } from "@/components/ReIcon/src/hooks";
 import { ref, reactive, onMounted, onBeforeUnmount } from "vue";
 import { useDataThemeChange } from "@/layout/hooks/useDataThemeChange";
+import { encrypt } from "@/utils/aes";
+import { useNav } from "@/layout/hooks/useNav";
 
 import dayIcon from "@/assets/svg/day.svg?component";
 import darkIcon from "@/assets/svg/dark.svg?component";
@@ -23,6 +25,7 @@ defineOptions({
 const router = useRouter();
 const loading = ref(false);
 const ruleFormRef = ref<FormInstance>();
+const { title } = useNav();
 
 const { initStorage } = useLayout();
 initStorage();
@@ -31,30 +34,39 @@ const { dataTheme, overallStyle, dataThemeChange } = useDataThemeChange();
 dataThemeChange(overallStyle.value);
 
 const ruleForm = reactive({
-  username: "admin",
-  password: "admin123"
+  userId: "",
+  password: ""
 });
 
 const onLogin = async (formEl: FormInstance | undefined) => {
   if (!formEl) return;
-  await formEl.validate((valid, fields) => {
+  await formEl.validate(async (valid, fields) => {
     if (valid) {
       loading.value = true;
-      useUserStoreHook()
-        .loginByUsername({ username: ruleForm.username, password: "admin123" })
-        .then(res => {
-          if (res.success) {
-            // 获取后端路由
-            return initRouter().then(() => {
-              router.push(getTopMenu(true).path).then(() => {
-                message("登录成功", { type: "success" });
+      try {
+        const encryptedPassword = await encrypt(ruleForm.password);
+        useUserStoreHook()
+          .loginByUsername({
+            userId: ruleForm.userId,
+            password: encryptedPassword
+          })
+          .then(res => {
+            if (res.code === 200) {
+              // 获取后端路由
+              return initRouter().then(() => {
+                router.push(getTopMenu(true).path).then(() => {
+                  message("登录成功", { type: "success" });
+                });
               });
-            });
-          } else {
-            message("登录失败", { type: "error" });
-          }
-        })
-        .finally(() => (loading.value = false));
+            } else {
+              message(res.message || "登录失败", { type: "error" });
+            }
+          })
+          .finally(() => (loading.value = false));
+      } catch (e) {
+        message("密码加密失败", { type: "error" });
+        loading.value = false;
+      }
     }
   });
 };
@@ -96,7 +108,7 @@ onBeforeUnmount(() => {
         <div class="login-form">
           <img :src="avatar" class="avatar" />
           <Motion>
-            <h2 class="outline-none">PET SHOP</h2>
+            <h2 class="outline-none">{{ title }}</h2>
           </Motion>
 
           <el-form
@@ -110,16 +122,16 @@ onBeforeUnmount(() => {
                 :rules="[
                   {
                     required: true,
-                    message: '请输入账号',
+                    message: '请输入用户ID',
                     trigger: 'blur'
                   }
                 ]"
-                prop="username"
+                prop="userId"
               >
                 <el-input
-                  v-model="ruleForm.username"
+                  v-model="ruleForm.userId"
                   clearable
-                  placeholder="账号"
+                  placeholder="用户ID"
                   :prefix-icon="useRenderIcon(User)"
                 />
               </el-form-item>
