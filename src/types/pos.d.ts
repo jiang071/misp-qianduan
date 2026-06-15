@@ -93,6 +93,9 @@ export interface Sale {
   total: number;
   totalQuantity: number;
   status: string;
+  couponCode?: string | null;
+  couponDiscount?: number | null;
+  orderTotal: number;
 }
 
 export interface SaleItem {
@@ -131,7 +134,7 @@ export interface OrderQueryParams {
   pageNum: number;
   pageSize: number;
   orderNo?: string;
-  username?: string;
+  userId?: string;
   orderStatus?: string;
 }
 

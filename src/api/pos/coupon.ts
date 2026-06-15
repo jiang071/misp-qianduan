@@ -1,9 +1,10 @@
 import { request } from "@/utils/request";
-import { stringify } from "qs";
-import { baseUrlApi } from "@/utils/request";
-import { http } from "@/utils/http";
-import type { ApiResult } from "@/utils/request/types";
+// import { stringify } from "qs";
+// import { baseUrlApi } from "@/utils/request";
+// import { http } from "@/utils/http";
+// import type { ApiResult } from "@/utils/request/types";
 import type { CouponQueryParams, CouponInfo } from "@/types/pos";
+import type { ValidateCouponRequest } from "@/types/order";
 
 /**
  * 分页查询优惠券列表 /coupon/list
@@ -29,20 +30,16 @@ export function deleteCouponByCode(couponCode: string) {
 }
 
 /**
- * 批量删除优惠券
- * @param codes 优惠券编码数组
+ * 批量删除优惠券 /coupon/batch
+ * @param codes 优惠券编码字符串数组
  */
-export const deleteCouponBatch = (codes: string[]) => {
-  return http.request<ApiResult>("delete", baseUrlApi("/coupon/delete"), {
-    params: {
-      codes
-    },
-    paramsSerializer: {
-      serialize: params => stringify(params, { arrayFormat: "repeat" })
-    }
+export function deleteCouponBatch(codes: string[]) {
+  return request({
+    url: "coupon/batch",
+    method: "delete",
+    data: codes
   });
-};
-
+}
 /**
  * 新增优惠券
  * @param data 优惠券表单实体
@@ -95,5 +92,49 @@ export function listCouponRecords(params: CouponQueryParams) {
     url: "coupon/records",
     method: "get",
     params: params
+  });
+}
+
+/**
+ * 查询当前可用的优惠券列表 /coupon/available
+ * @param orderTotal 订单金额（必填）
+ * @param userId 用户id（可选）
+ */
+export function getAvailableCoupon(
+  orderTotal: number,
+  userId?: string | number
+) {
+  // 组装请求参数
+  const params: Record<string, any> = { orderTotal };
+  if (userId !== undefined && userId !== null) {
+    params.userId = userId;
+  }
+  return request({
+    url: "coupon/available",
+    method: "get",
+    params: params
+  });
+}
+
+/**
+ * 根据优惠券编码查询优惠券详情 /coupon/{couponCode}
+ * @param couponCode 优惠券唯一编码
+ */
+export function getCouponDetailByCode(couponCode: string) {
+  return request({
+    url: `coupon/${couponCode}`,
+    method: "get"
+  });
+}
+
+/**
+ * 校验优惠券是否可用并计算折后金额 /coupon/validate
+ * @param data 校验请求参数
+ */
+export function validateCoupon(data: ValidateCouponRequest) {
+  return request({
+    url: "coupon/validate",
+    method: "post",
+    data: data
   });
 }

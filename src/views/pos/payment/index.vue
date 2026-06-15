@@ -11,10 +11,10 @@
           @keyup.enter="handleQuery"
         />
       </el-form-item>
-      <el-form-item label="支付用户" prop="username">
+      <el-form-item label="支付用户" prop="userId">
         <el-input
-          v-model="queryParams.username"
-          placeholder="请输入用户名称"
+          v-model="queryParams.userId"
+          placeholder="请输入用户ID"
           clearable
           style="width: 200px"
           @keyup.enter="handleQuery"
@@ -90,7 +90,7 @@
       <el-table-column
         label="支付用户"
         align="center"
-        prop="username"
+        prop="userId"
         width="180"
       />
       <el-table-column
@@ -185,7 +185,7 @@
             order.userId
           }}</el-descriptions-item>
           <el-descriptions-item label="支付用户">{{
-            order.username || "无"
+            order.userId || "无"
           }}</el-descriptions-item>
           <el-descriptions-item label="支付金额">{{
             order.payAmount || 0
@@ -273,7 +273,7 @@ const queryParams = reactive<OrderQueryParams>({
   pageNum: 1,
   pageSize: 10,
   orderNo: undefined,
-  username: undefined,
+  userId: undefined,
   orderStatus: undefined
 });
 const route = useRoute();
@@ -297,7 +297,7 @@ function resetQuery() {
   queryParams.pageNum = 1;
   queryParams.pageSize = 10;
   queryParams.orderNo = undefined;
-  queryParams.username = undefined;
+  queryParams.userId = undefined;
   queryParams.orderStatus = undefined;
   getOrderList();
 }

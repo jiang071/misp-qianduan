@@ -206,7 +206,7 @@
     <el-form-item label="上传详情图" prop="detailImages">
       <div
         v-if="form.detailImages"
-        style="margin-bottom: 8px; display: flex; gap: 8px; flex-wrap: wrap"
+        style=" display: flex; flex-wrap: wrap; gap: 8px;margin-bottom: 8px"
       >
         <a
           v-for="(url, idx) in JSON.parse(form.detailImages || '[]')"
@@ -705,7 +705,7 @@ const submitForm = async (formEl: FormInstance | undefined) => {
       // 1. 计算总库存
       const totalStock = skuList.reduce((sum, s) => sum + (s.skuStock || 0), 0);
       form.productStock = totalStock;
-      form.stockStatus = totalStock > 0 ? "IN_STOCK" : "OUT_OF_STOCK";
+      form.stockStatus = totalStock > 0 ? "NORMAL" : "OUT_OF_STOCK";
 
       // 2. 计算商品最低价
       const prices = skuList.map(s => s.skuPrice || 0).filter(p => p > 0);
