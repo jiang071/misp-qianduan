@@ -10,6 +10,11 @@ const props = defineProps({
   questionData: {
     type: Array as PropType<Array<number>>,
     default: () => []
+  },
+  xAxisData: {
+    // 新增x轴日期props
+    type: Array as PropType<Array<string>>,
+    default: () => ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
   }
 });
 
@@ -36,12 +41,12 @@ watch(
         }
       },
       grid: {
-        top: "20px",
+        top: "30px",
         left: "50px",
-        right: 0
+        right: "50px"
       },
       legend: {
-        data: ["需求人数", "提问数量"],
+        data: ["订单成交数", "当日交易总额"],
         textStyle: {
           color: "#606266",
           fontSize: "0.875rem"
@@ -51,7 +56,7 @@ watch(
       xAxis: [
         {
           type: "category",
-          data: ["周一", "周二", "周三", "周四", "周五", "周六", "周日"],
+          data: props.xAxisData,
           axisLabel: {
             fontSize: "0.875rem"
           },
@@ -63,18 +68,54 @@ watch(
       yAxis: [
         {
           type: "value",
+          name: "订单数 (个)",
+          nameTextStyle: {
+            fontSize: "0.875rem",
+            color: "#41b6ff"
+          },
           axisLabel: {
-            fontSize: "0.875rem"
+            fontSize: "0.875rem",
+            color: "#41b6ff"
           },
           splitLine: {
-            show: false // 去网格线
-          }
-          // name: "单位: 个"
+            show: false
+          },
+          axisLine: {
+            lineStyle: {
+              color: "#41b6ff"
+            }
+          },
+          min: 0,
+          max: 10
+        },
+        // 第二个Y轴（右侧）：对应「当日交易总额」
+        {
+          type: "value",
+          name: "交易额 (元)",
+          nameTextStyle: {
+            fontSize: "0.875rem",
+            color: "#e86033ce"
+          },
+          axisLabel: {
+            fontSize: "0.875rem",
+            color: "#e86033ce"
+          },
+          splitLine: {
+            show: false
+          },
+          axisLine: {
+            lineStyle: {
+              color: "#e86033ce"
+            }
+          },
+          min: 0,
+          max: 100,
+          position: "right"
         }
       ],
       series: [
         {
-          name: "需求人数",
+          name: "订单成交数",
           type: "bar",
           barWidth: 10,
           itemStyle: {
@@ -84,7 +125,7 @@ watch(
           data: props.requireData
         },
         {
-          name: "提问数量",
+          name: "当日交易总额",
           type: "bar",
           barWidth: 10,
           itemStyle: {

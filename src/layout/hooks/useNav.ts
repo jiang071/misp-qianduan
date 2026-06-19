@@ -51,6 +51,11 @@ export function useNav() {
       : useUserStoreHook()?.nickname;
   });
 
+  /** 用户ID */
+  const userId = computed(() => {
+    return useUserStoreHook()?.userId ?? "";
+  });
+
   const avatarsStyle = computed(() => {
     return username.value ? { marginRight: "10px" } : "";
   });
@@ -123,7 +128,7 @@ export function useNav() {
 
   /** 获取`logo` */
   function getLogo() {
-    return new URL("/logo.svg", import.meta.url).href;
+    return new URL("/logo.png", import.meta.url).href;
   }
 
   return {
@@ -150,6 +155,7 @@ export function useNav() {
     isCollapse,
     pureApp,
     username,
+    userId,
     userAvatar,
     avatarsStyle,
     tooltipEffect

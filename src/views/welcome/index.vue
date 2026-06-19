@@ -1,43 +1,81 @@
 <script setup lang="ts">
-import { ref, markRaw } from "vue";
+import { ref, onMounted } from "vue";
 import ReCol from "@/components/ReCol";
-import { useDark, randomGradient } from "./utils";
+import { useDark } from "./utils";
 import WelcomeTable from "./components/table/index.vue";
 import { ReNormalCountTo } from "@/components/ReCountTo";
-import { useRenderFlicker } from "@/components/ReFlicker";
-import { ChartBar, ChartLine, ChartRound } from "./components/charts";
-import Segmented, { type OptionsType } from "@/components/ReSegmented";
-import { chartData, barChartData, progressData, latestNewsData } from "./data";
-
+import { ChartBar, ChartRound } from "./components/charts";
+import {
+  chartData,
+  barChartData,
+  getchartData,
+  totalOrderCount,
+  salesData,
+  getSalesAmount,
+  totalSalesAmount,
+  getBarChartData,
+  xAxisData
+} from "./data";
+import { useRouter } from "vue-router";
+import { exportSalesRanking } from "@/api/pos/dataPanel";
 defineOptions({
   name: "Welcome"
 });
 
 const { isDark } = useDark();
+const router = useRouter();
+const dateRange = ref<[string, string] | []>([]);
+onMounted(async () => {
+  await getchartData();
+  await getSalesAmount();
+  await getBarChartData();
+});
+const handleCardClick = (orderStatus: number) => {
+  router.push({
+    name: "payment",
+    query: {
+      orderStatus: orderStatus
+    }
+  });
+};
+const tableRef = ref(null);
 
-let curWeek = ref(1); // 0上周、1本周
-const optionsBasis: Array<OptionsType> = [
-  {
-    label: "上周"
-  },
-  {
-    label: "本周"
+const handleSearch = () => {
+  tableRef.value?.getSalesRankingData();
+};
+const exportData = async () => {
+  try {
+    const [startDate, endDate] = dateRange.value ?? [];
+    const params = {
+      startDate: startDate || "",
+      endDate: endDate || ""
+    };
+    const res = await exportSalesRanking(params);
+    const blob = new Blob([res.data], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `数据报表_${new Date().getTime()}.xlsx`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  } catch (err) {
+    console.error("导出失败", err);
   }
-];
+};
 </script>
 
 <template>
   <div>
-    <el-row :gutter="24" justify="space-around">
-      <re-col
+    <div class="chart-card-container">
+      <div
         v-for="(item, index) in chartData"
         :key="index"
         v-motion
-        class="mb-[18px]"
-        :value="6"
-        :md="12"
-        :sm="12"
-        :xs="24"
+        class="chart-card-item"
         :initial="{
           opacity: 0,
           y: 100
@@ -49,6 +87,7 @@ const optionsBasis: Array<OptionsType> = [
             delay: 80 * (index + 1)
           }
         }"
+        @click="handleCardClick(item.orderStatus)"
       >
         <el-card class="line-card" shadow="never">
           <div class="flex justify-between">
@@ -76,19 +115,16 @@ const optionsBasis: Array<OptionsType> = [
                 :startVal="100"
                 :endVal="item.value"
               />
-              <p class="font-medium text-green-500">{{ item.percent }}</p>
             </div>
-            <ChartLine
-              v-if="item.data.length > 1"
+            <ChartRound
               class="!w-1/2"
-              :color="item.color"
-              :data="item.data"
+              :percentage="((item.value / totalOrderCount) * 100).toFixed(1)"
             />
-            <ChartRound v-else class="!w-1/2" />
           </div>
         </el-card>
-      </re-col>
-
+      </div>
+    </div>
+    <el-row :gutter="10" justify="space-around">
       <re-col
         v-motion
         class="mb-[18px]"
@@ -106,15 +142,15 @@ const optionsBasis: Array<OptionsType> = [
           }
         }"
       >
-        <el-card class="bar-card" shadow="never">
+        <el-card class="bar-card" shadow="never" style="padding-bottom: 10px">
           <div class="flex justify-between">
             <span class="text-md font-medium">分析概览</span>
-            <Segmented v-model="curWeek" :options="optionsBasis" />
           </div>
           <div class="flex justify-between items-start mt-3">
             <ChartBar
-              :requireData="barChartData[curWeek].requireData"
-              :questionData="barChartData[curWeek].questionData"
+              :requireData="barChartData.totalData"
+              :questionData="barChartData.saleData"
+              :xAxisData="xAxisData"
             />
           </div>
         </el-card>
@@ -139,10 +175,10 @@ const optionsBasis: Array<OptionsType> = [
       >
         <el-card shadow="never">
           <div class="flex justify-between">
-            <span class="text-md font-medium">解决概率</span>
+            <span class="text-md font-medium">近七日交易额统计</span>
           </div>
           <div
-            v-for="(item, index) in progressData"
+            v-for="(item, index) in salesData"
             :key="index"
             :class="[
               'flex',
@@ -153,15 +189,21 @@ const optionsBasis: Array<OptionsType> = [
           >
             <el-progress
               :text-inside="true"
-              :percentage="item.percentage"
+              :percentage="
+                totalSalesAmount === 0
+                  ? 0
+                  : parseFloat(
+                      ((item.totalAmount / totalSalesAmount) * 100).toFixed(1)
+                    )
+              "
               :stroke-width="21"
-              :color="item.color"
+              color="#26ce83"
               striped
               striped-flow
-              :duration="item.duration"
+              :duration="100"
             />
             <span class="text-nowrap ml-2 text-text_color_regular text-sm">
-              {{ item.week }}
+              {{ item.date }}
             </span>
           </div>
         </el-card>
@@ -170,7 +212,7 @@ const optionsBasis: Array<OptionsType> = [
       <re-col
         v-motion
         class="mb-[18px]"
-        :value="18"
+        :value="24"
         :xs="24"
         :initial="{
           opacity: 0,
@@ -187,58 +229,21 @@ const optionsBasis: Array<OptionsType> = [
         <el-card shadow="never" class="h-[580px]">
           <div class="flex justify-between">
             <span class="text-md font-medium">数据统计</span>
+            <div class="flex items-center gap-5">
+              <el-date-picker
+                v-model="dateRange"
+                type="daterange"
+                range-separator="至"
+                start-placeholder="开始日期"
+                end-placeholder="结束日期"
+                :size="'small'"
+                value-format="YYYY-MM-DD"
+              />
+              <el-button type="primary" @click="handleSearch">查询</el-button>
+              <el-button type="success" @click="exportData">导出</el-button>
+            </div>
           </div>
-          <WelcomeTable class="mt-3" />
-        </el-card>
-      </re-col>
-
-      <re-col
-        v-motion
-        class="mb-[18px]"
-        :value="6"
-        :xs="24"
-        :initial="{
-          opacity: 0,
-          y: 100
-        }"
-        :enter="{
-          opacity: 1,
-          y: 0,
-          transition: {
-            delay: 640
-          }
-        }"
-      >
-        <el-card shadow="never">
-          <div class="flex justify-between">
-            <span class="text-md font-medium">最新动态</span>
-          </div>
-          <el-scrollbar max-height="504" class="mt-3">
-            <el-timeline>
-              <el-timeline-item
-                v-for="(item, index) in latestNewsData"
-                :key="index"
-                center
-                placement="top"
-                :icon="
-                  markRaw(
-                    useRenderFlicker({
-                      background: randomGradient({
-                        randomizeHue: true
-                      })
-                    })
-                  )
-                "
-                :timestamp="item.date"
-              >
-                <p class="text-text_color_regular text-sm">
-                  {{
-                    `新增 ${item.requiredNumber} 条问题，${item.resolveNumber} 条已解决`
-                  }}
-                </p>
-              </el-timeline-item>
-            </el-timeline>
-          </el-scrollbar>
+          <WelcomeTable ref="tableRef" class="mt-3" :date-range="dateRange" />
         </el-card>
       </re-col>
     </el-row>
@@ -272,5 +277,18 @@ const optionsBasis: Array<OptionsType> = [
 
 .main-content {
   margin: 20px 20px 0 !important;
+}
+
+.chart-card-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 30px;
+  margin-bottom: 18px;
+}
+
+.chart-card-item {
+  box-sizing: border-box;
+  flex: 1 1 calc(20% - 24px);
+  min-width: 180px;
 }
 </style>

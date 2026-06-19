@@ -2,16 +2,17 @@
 import Motion from "./utils/motion";
 import { useRouter } from "vue-router";
 import { message } from "@/utils/message";
-import { loginRules } from "./utils/rule";
-import { useNav } from "@/layout/hooks/useNav";
+import { loginRules } from "@/utils/rule";
 import type { FormInstance } from "element-plus";
 import { useLayout } from "@/layout/hooks/useLayout";
 import { useUserStoreHook } from "@/store/modules/user";
 import { initRouter, getTopMenu } from "@/router/utils";
-import { bg, avatar, illustration } from "./utils/static";
+import { bg, avatar, logo } from "./utils/static";
 import { useRenderIcon } from "@/components/ReIcon/src/hooks";
-import { ref, reactive, toRaw, onMounted, onBeforeUnmount } from "vue";
+import { ref, reactive, onMounted, onBeforeUnmount } from "vue";
 import { useDataThemeChange } from "@/layout/hooks/useDataThemeChange";
+import { encrypt } from "@/utils/aes";
+import { useNav } from "@/layout/hooks/useNav";
 
 import dayIcon from "@/assets/svg/day.svg?component";
 import darkIcon from "@/assets/svg/dark.svg?component";
@@ -24,39 +25,48 @@ defineOptions({
 const router = useRouter();
 const loading = ref(false);
 const ruleFormRef = ref<FormInstance>();
+const { title } = useNav();
 
 const { initStorage } = useLayout();
 initStorage();
 
 const { dataTheme, overallStyle, dataThemeChange } = useDataThemeChange();
 dataThemeChange(overallStyle.value);
-const { title } = useNav();
 
 const ruleForm = reactive({
-  username: "admin",
-  password: "admin123"
+  userId: "",
+  password: ""
 });
 
 const onLogin = async (formEl: FormInstance | undefined) => {
   if (!formEl) return;
-  await formEl.validate((valid, fields) => {
+  await formEl.validate(async (valid, fields) => {
     if (valid) {
       loading.value = true;
-      useUserStoreHook()
-        .loginByUsername({ username: ruleForm.username, password: "admin123" })
-        .then(res => {
-          if (res.success) {
-            // 获取后端路由
-            return initRouter().then(() => {
-              router.push(getTopMenu(true).path).then(() => {
-                message("登录成功", { type: "success" });
-              });
-            });
-          } else {
-            message("登录失败", { type: "error" });
-          }
-        })
-        .finally(() => (loading.value = false));
+      try {
+        // 加密密码
+        const encryptedPassword = await encrypt(ruleForm.password);
+        // 登录接口 await，报错直接进入外层catch
+        const res = await useUserStoreHook().loginByUsername({
+          userId: ruleForm.userId,
+          password: encryptedPassword
+        });
+
+        if (res.code === 200) {
+          await initRouter();
+          await router.push(getTopMenu(true).path);
+          message("登录成功", { type: "success" });
+        } else {
+          message(res.message || "登录失败", { type: "error" });
+        }
+      } catch (err) {
+        // 统一捕获两类错误：加密失败 / 登录接口异常
+        const errMsg = err.message || "登录失败，请检查账号密码或网络";
+        message(errMsg, { type: "error" });
+      } finally {
+        // 无论成功失败，关闭loading
+        loading.value = false;
+      }
     }
   });
 };
@@ -92,11 +102,11 @@ onBeforeUnmount(() => {
     </div>
     <div class="login-container">
       <div class="img">
-        <component :is="toRaw(illustration)" />
+        <img :src="logo" />
       </div>
       <div class="login-box">
         <div class="login-form">
-          <avatar class="avatar" />
+          <img :src="avatar" class="avatar" />
           <Motion>
             <h2 class="outline-none">{{ title }}</h2>
           </Motion>
@@ -112,16 +122,16 @@ onBeforeUnmount(() => {
                 :rules="[
                   {
                     required: true,
-                    message: '请输入账号',
+                    message: '请输入用户ID',
                     trigger: 'blur'
                   }
                 ]"
-                prop="username"
+                prop="userId"
               >
                 <el-input
-                  v-model="ruleForm.username"
+                  v-model="ruleForm.userId"
                   clearable
-                  placeholder="账号"
+                  placeholder="用户ID"
                   :prefix-icon="useRenderIcon(User)"
                 />
               </el-form-item>

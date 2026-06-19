@@ -1,5 +1,4 @@
 import editForm from "../form.vue";
-import { handleTree } from "@/utils/tree";
 import { message } from "@/utils/message";
 import { getMenuList } from "@/api/system";
 import { addDialog } from "@/components/ReDialog";
@@ -16,19 +15,6 @@ export function useMenu() {
   const formRef = ref();
   const dataList = ref([]);
   const loading = ref(true);
-
-  const getMenuType = (type, text = false) => {
-    switch (type) {
-      case 0:
-        return text ? "菜单" : "primary";
-      case 1:
-        return text ? "iframe" : "warning";
-      case 2:
-        return text ? "外链" : "danger";
-      case 3:
-        return text ? "按钮" : "info";
-    }
-  };
 
   const columns: TableColumnList = [
     {
@@ -47,20 +33,6 @@ export function useMenu() {
       )
     },
     {
-      label: "菜单类型",
-      prop: "menuType",
-      width: 100,
-      cellRenderer: ({ row, props }) => (
-        <el-tag
-          size={props.size}
-          type={getMenuType(row.menuType)}
-          effect="plain"
-        >
-          {getMenuType(row.menuType, true)}
-        </el-tag>
-      )
-    },
-    {
       label: "路由路径",
       prop: "path"
     },
@@ -71,18 +43,24 @@ export function useMenu() {
         isAllEmpty(component) ? path : component
     },
     {
-      label: "权限标识",
-      prop: "auths"
+      label: "路径标识",
+      prop: "name"
     },
     {
       label: "排序",
-      prop: "rank",
+      prop: "sort",
       width: 100
     },
     {
       label: "隐藏",
-      prop: "showLink",
-      formatter: ({ showLink }) => (showLink ? "否" : "是"),
+      prop: "hidden",
+      formatter: ({ hidden }) => (hidden ? "是" : "否"),
+      width: 100
+    },
+    {
+      label: "状态",
+      prop: "status",
+      formatter: ({ status }) => (status ? "启用" : "停用"),
       width: 100
     },
     {
@@ -105,13 +83,8 @@ export function useMenu() {
 
   async function onSearch() {
     loading.value = true;
-    const { data } = await getMenuList(); // 这里是返回一维数组结构，前端自行处理成树结构，返回格式要求：唯一id加父节点parentId，parentId取父节点id
-    let newData = data;
-    if (!isAllEmpty(form.title)) {
-      // 前端搜索菜单名称
-      newData = newData.filter(item => item.title.includes(form.title));
-    }
-    dataList.value = handleTree(newData); // 处理成树结构
+    const { data } = await getMenuList({ title: form.title });
+    dataList.value = data; // 处理成树结构
     setTimeout(() => {
       loading.value = false;
     }, 500);

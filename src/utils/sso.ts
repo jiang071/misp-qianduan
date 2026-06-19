@@ -37,7 +37,11 @@ import { subBefore, getQueryMap } from "@pureadmin/utils";
     removeToken();
 
     // 保存新信息到本地
-    setToken(params);
+    setToken({
+      username: params.username,
+      roles: params.roles,
+      accessToken: params.accessToken
+    } as DataInfo<number>);
 
     // 删除不需要显示在 url 的参数
     delete params.roles;

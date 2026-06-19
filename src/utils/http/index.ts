@@ -13,7 +13,6 @@ import { stringify } from "qs";
 import NProgress from "../progress";
 import { getToken, formatToken } from "@/utils/auth";
 import { useUserStoreHook } from "@/store/modules/user";
-
 // 相关配置请参考：www.axios-js.com/zh-cn/docs/#axios-request-config-1
 const defaultConfig: AxiosRequestConfig = {
   // 请求超时时间
@@ -73,7 +72,7 @@ class PureHttp {
           return config;
         }
         /** 请求白名单，放置一些不需要`token`的接口（通过设置请求白名单，防止`token`过期后再请求造成的死循环问题） */
-        const whiteList = ["/refresh-token", "/login"];
+        const whiteList = ["/user/refreshToken", "/user/login"];
         return whiteList.some(url => config.url.endsWith(url))
           ? config
           : new Promise(resolve => {
@@ -123,6 +122,19 @@ class PureHttp {
         const $config = response.config;
         // 关闭进度条动画
         NProgress.done();
+        const res = response.data;
+        if (res.code && res.code !== 200) {
+          // 显示错误信息
+          const errorMsg = res.msg || res.message || "请求失败";
+
+          // 抛出错误，让调用方进入 catch
+          return Promise.reject({
+            code: res.code,
+            message: errorMsg,
+            data: res.data
+          });
+        }
+
         // 优先判断post/get等方法是否传入回调，否则执行初始化设置等回调
         if (typeof $config.beforeResponseCallback === "function") {
           $config.beforeResponseCallback(response);
@@ -139,6 +151,13 @@ class PureHttp {
         $error.isCancelRequest = Axios.isCancel($error);
         // 关闭进度条动画
         NProgress.done();
+
+        // 处理 HTTP 状态码 403 无权限错误
+        if ($error.response && $error.response.status === 403) {
+          // 返回一个 resolved 的 Promise，避免未处理的 Promise 拒绝
+          return Promise.reject({ code: 403, message: "你没有该功能权限" });
+        }
+
         // 所有的响应异常 区分来源为取消请求/非取消请求
         return Promise.reject($error);
       }
