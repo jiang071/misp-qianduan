@@ -48,8 +48,8 @@
     </el-form-item>
     <el-form-item label="类别状态" prop="state">
       <el-select v-model="ruleForm.state" placeholder="请选择类别状态">
-        <el-option label="上架" value="true" />
-        <el-option label="下架" value="false" />
+        <el-option label="上架" value="1" />
+        <el-option label="下架" value="0" />
       </el-select>
     </el-form-item>
     <el-form-item>
@@ -82,7 +82,7 @@ interface RuleForm {
   categoryId?: number;
   parentId: number;
   categoryName: string;
-  state: string;
+  state: number | string;
   level: number;
   firstlevel?: number;
   secondlevel?: number;
@@ -123,7 +123,7 @@ function init() {
       ruleForm.parentId = res.data.parentId;
       ruleForm.categoryName = res.data.categoryName;
       ruleForm.level = res.data.level;
-      ruleForm.state = res.data.state ? "true" : "false";
+      ruleForm.state = res.data.state === 1 ? "1" : "0";
       if (res.data.level === 2) {
         ruleForm.firstlevel = res.data.parentId;
       } else if (res.data.level === 3) {
@@ -211,7 +211,7 @@ const submitForm = async (formEl: FormInstance | undefined) => {
         categoryId: form.categoryId,
         parentId: form.parentId,
         categoryName: form.categoryName,
-        state: form.state === "true",
+        state: form.state === "1" ? 1 : 0,
         level: Number(form.level),
         path: "" // 路径由后端生成（如0,1,5），前端无需传入
       };

@@ -68,8 +68,19 @@
           </el-form-item>
         </el-col>
         <el-col :span="12">
-          <el-form-item label="使用优惠券">
-            <el-input v-model="coupon" disabled clearable />
+          <el-form-item label="优惠券编码">
+            <el-input v-model="couponCode" disabled clearable />
+          </el-form-item>
+        </el-col>
+        <el-col :span="12">
+          <el-form-item label="优惠金额">
+            <el-input-number
+              v-model="couponDiscount"
+              disabled
+              :min="0"
+              :precision="2"
+              style="width: 100%"
+            />
           </el-form-item>
         </el-col>
       </el-row>
@@ -114,6 +125,11 @@
           align="center"
           width="100"
         />
+        <el-table-column label="规格组合" align="center" min-width="140">
+          <template #default="scope">
+            {{ formatSpecCombo(scope.row.specCombo) }}
+          </template>
+        </el-table-column>
         <el-table-column label="商品状态" align="center" width="110">
           <template #default="scope">
             <el-tag :type="getItemStatusTagType(scope.row.orderItemStatus)">
@@ -134,9 +150,11 @@
               查看详情
             </el-button>
 
-            <!-- 换货：仅 订单状态 = 已完成(2) 时显示 -->
             <el-button
-              v-if="originalOrderStatus === 2"
+              v-if="
+                originalOrderStatus === 2 &&
+                [1].includes(scope.row.orderItemStatus)
+              "
               link
               type="warning"
               icon="Edit"
@@ -323,8 +341,8 @@ const form = reactive<Order>({
 
 const originalOrderStatus = ref(0);
 
-// 优惠券（不在 Order 基础类型中，单独管理）
-const coupon = ref("");
+const couponCode = ref("");
+const couponDiscount = ref<number | null>(null);
 
 // ==================== 订单明细 ====================
 const orderItems = ref<OrderItem[]>([]);
@@ -339,11 +357,9 @@ watch(
       const res = await getOrderByOrderNo(orderNo);
       const dataList = res.data;
 
-      // 🔥 适配你的真实接口结构：data 是数组，取第一条
       if (Array.isArray(dataList) && dataList.length > 0) {
         const orderData = dataList[0]; // 订单主信息
 
-        // 1. 赋值订单表单（所有信息）
         Object.assign(form, {
           id: orderData.id,
           orderNo: orderData.orderNo,
@@ -356,9 +372,10 @@ watch(
           alipayTradeNo: orderData.alipayTradeNo,
           payTime: orderData.payTime
         });
+        couponCode.value = orderData.couponCode || "无";
+        couponDiscount.value = orderData.couponDiscount ?? 0;
         originalOrderStatus.value = form.orderStatus;
 
-        // 2. 🔥 赋值订单明细（关键字段：orderItems）
         if (Array.isArray(orderData.orderItems)) {
           orderItems.value = orderData.orderItems;
         }
@@ -495,8 +512,8 @@ const submitForm = async () => {
       orderItems.value.forEach(item => {
         item.orderItemStatus = 1;
       });
-      // ✅ 调用支付接口（你提供的）
-      await payOrder(form.orderNo);
+      form.payStatus = 1;
+      await payOrder(form.orderNo, couponCode.value);
     }
 
     if (newStatus === 4) {
@@ -504,6 +521,7 @@ const submitForm = async () => {
       orderItems.value.forEach(item => {
         item.orderItemStatus = 2;
       });
+      await updateOrderItem(orderItems.value);
     }
 
     // 更新订单主表
@@ -530,7 +548,6 @@ const getStatusText = (status: number) => {
   return map[status] ?? "未知";
 };
 
-// 🔥 新增：关闭弹窗时还原订单状态，解决脏数据
 const handleClose = () => {
   form.orderStatus = originalOrderStatus.value;
   emit("close");
@@ -556,6 +573,7 @@ const handleRefundSingleItem = async (item: OrderItem) => {
           item.orderItemStatus = 2;
           await refreshOrderData();
           ElMessage.success("退款成功");
+          emit("refreshParent");
         } catch (err) {
           ElMessage.error("退款失败");
           console.error(err);

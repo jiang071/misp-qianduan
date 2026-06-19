@@ -78,9 +78,10 @@ export function useColumns() {
   const getSalesRankingData = async () => {
     loading.value = true;
     try {
+      const [startDate, endDate] = dateRange.value || [];
       const params = {
-        startDate: dateRange.value[0],
-        endDate: dateRange.value[1],
+        startDate: startDate || "",
+        endDate: endDate || "",
         pageNum: pagination.currentPage,
         pageSize: pagination.pageSize
       };

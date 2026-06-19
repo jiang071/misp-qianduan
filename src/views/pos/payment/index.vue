@@ -280,7 +280,7 @@ const route = useRoute();
 onMounted(() => {
   const status = route.query.orderStatus;
   if (status) {
-    queryParams.orderStatus = Array.isArray(status) ? status[0] : status;
+    queryParams.orderStatus = Number(status);
   }
   getOrderList();
 });

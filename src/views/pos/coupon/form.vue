@@ -92,9 +92,7 @@
               placeholder="选择开始时间"
               value-format="YYYY-MM-DD HH:mm:ss"
               style="width: 100%"
-              :disabled="
-                isEdit && (formData.status === 1 || formData.status === 2)
-              "
+              :disabled="isEdit && formData.status !== 1"
               :disabled-date="disabledStartDate"
               @change="onStartChange"
             />
@@ -108,9 +106,7 @@
               placeholder="选择结束时间"
               value-format="YYYY-MM-DD HH:mm:ss"
               style="width: 100%"
-              :disabled="
-                isEdit && (formData.status === 1 || formData.status === 2)
-              "
+              :disabled="isEdit && formData.status !== 1"
               :disabled-date="disabledEndDate"
               @change="onEndChange"
             />
@@ -119,12 +115,12 @@
         <el-col :span="12">
           <el-form-item label="状态" prop="status">
             <el-select
-              v-model="statusDisplay"
+              v-model="formData.status"
               style="width: 100%"
               :disabled="formData.status === 2"
             >
-              <el-option label="启用" :value="1" />
-              <el-option label="停用" :value="0" />
+              <el-option label="启用" :value="0" />
+              <el-option label="停用" :value="1" />
             </el-select>
           </el-form-item>
         </el-col>
@@ -193,13 +189,6 @@ const formData = reactive<CouponInfo>({
   validStartTime: "",
   validEndTime: "",
   status: 0
-});
-
-const statusDisplay = computed({
-  get: (): number => (formData.status === 1 ? 1 : 0),
-  set: (val: number) => {
-    formData.status = val;
-  }
 });
 
 const rules: FormRules = {
@@ -318,7 +307,7 @@ const autoSetStatus = () => {
   const start = new Date(formData.validStartTime);
   const end = new Date(formData.validEndTime);
   if (now >= start && now <= end) {
-    formData.status = 1; // 正常发放
+    formData.status = 0; // 正常发放
   }
 };
 
@@ -351,7 +340,6 @@ async function handleSubmit() {
       createTime: formData.createTime
     };
 
-    // 🔥 拿返回值判断 code
     const res = isEdit.value
       ? await updateCoupon(submitData)
       : await addCoupon(submitData);
@@ -365,7 +353,7 @@ async function handleSubmit() {
           { confirmButtonText: "确定", type: "warning" }
         );
       } else {
-        ElMessage.error(msg || "保存失败");
+        ElMessage.error(msg || "保存失败"); // ← 这里一闪而过
       }
       return;
     }
@@ -373,8 +361,9 @@ async function handleSubmit() {
     ElMessage.success(isEdit.value ? "修改成功" : "新增成功");
     emit("refresh");
     emit("close");
-  } catch {
-    ElMessage.error("网络异常，保存失败");
+  } catch (err: any) {
+    const errorMsg = err?.message || err?.msg || "网络异常，保存失败";
+    ElMessage.error(errorMsg);
   } finally {
     saving.value = false;
   }

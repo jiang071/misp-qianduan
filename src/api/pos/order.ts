@@ -3,6 +3,7 @@ import { baseUrlApi } from "@/utils/request";
 import type { Order, OrderItem } from "@/types/pos";
 import { http } from "@/utils/http";
 import type { ApiResult } from "@/utils/request/types";
+import { stringify } from "qs";
 
 export function listOrderByPage(params: any) {
   return request({
@@ -26,10 +27,12 @@ export function deleteOrderByOrderId(orderId: number) {
   });
 }
 
-// 批量删除订单
 export const deleteOrderBatch = (ids: number[]) => {
   return http.request<ApiResult>("delete", baseUrlApi("/pos/delete"), {
-    params: { ids }
+    params: { ids },
+    paramsSerializer: {
+      serialize: params => stringify(params, { arrayFormat: "repeat" })
+    }
   });
 };
 
@@ -58,11 +61,11 @@ export function createOrder(data: Order) {
   });
 }
 
-export function payOrder(orderNo: string) {
+export function payOrder(orderNo: string, couponCode: string) {
   return request({
     url: "/pos/pay",
     method: "post",
-    params: { orderNo }
+    params: { orderNo, couponCode }
   });
 }
 

@@ -97,7 +97,10 @@ export function useColumns() {
       className: "pure-version",
       cellRenderer: () => {
         return (
-          <a href="https://pure-admin.cn/" target="_blank">
+          <a
+            href="https://ocn6jtwof5z1.feishu.cn/wiki/HJGPwOax8ipXlUkMJQDcTuYFn5b?from=from_copylink"
+            target="_blank"
+          >
             <span style="color: var(--el-color-primary)">测试文档链接</span>
           </a>
         );

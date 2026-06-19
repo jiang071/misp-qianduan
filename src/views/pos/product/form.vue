@@ -1,7 +1,7 @@
 <template>
   <el-form
     ref="ruleFormRef"
-    style="max-width: 800px; padding-right: 40px; padding-left: 40px"
+    style="max-width: 900px; padding-right: 40px; padding-left: 40px"
     :model="form"
     :rules="rules"
     label-width="90px"
@@ -115,7 +115,7 @@
             />
           </template>
         </el-table-column>
-        <el-table-column label="价格" min-width="100">
+        <el-table-column label="价格" min-width="120">
           <template #default="{ row }">
             <el-input-number
               v-model="row.skuPrice"
@@ -126,7 +126,7 @@
             />
           </template>
         </el-table-column>
-        <el-table-column label="库存" min-width="100">
+        <el-table-column label="库存" min-width="120">
           <template #default="{ row }">
             <el-input-number
               v-model="row.skuStock"
@@ -136,16 +136,30 @@
             />
           </template>
         </el-table-column>
-        <el-table-column label="详情图" min-width="150">
+        <el-table-column label="详情图" min-width="130">
           <template #default="{ row }">
-            <div v-if="row.skuImage" style="margin-bottom: 4px">
+            <div
+              v-if="row.skuImage"
+              style="
+                display: flex;
+                gap: 8px;
+                align-items: center;
+                margin-bottom: 4px;
+              "
+            >
               <span
-                v-if="row.skuImage"
                 style="color: #1677ff; cursor: pointer"
                 @click="openPreview(row.skuImage)"
               >
                 点击查看
               </span>
+              <el-button
+                type="danger"
+                :icon="Delete"
+                circle
+                size="small"
+                @click="row.skuImage = ''"
+              />
             </div>
             <el-input
               v-model="row.skuImage"
@@ -161,7 +175,7 @@
             </el-input>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="100" fixed="right">
+        <el-table-column label="操作" width="80" fixed="right">
           <template #default="{ $index }">
             <el-button
               type="danger"
@@ -187,13 +201,23 @@
 
     <!-- 主图URL -->
     <el-form-item label="上传主图" prop="mainImage">
-      <div v-if="form.mainImage" style="margin-bottom: 8px">
+      <div
+        v-if="form.mainImage"
+        style="display: flex; gap: 8px; align-items: center; margin-bottom: 8px"
+      >
         <span
           style="color: #1677ff; cursor: pointer"
           @click="openPreview(form.mainImage)"
         >
           点击查看主图
         </span>
+        <el-button
+          type="danger"
+          :icon="Delete"
+          circle
+          size="small"
+          @click="form.mainImage = ''"
+        />
       </div>
       <el-input v-model="form.mainImage" placeholder="请输入图片URL" disabled>
         <template #append>
@@ -206,16 +230,27 @@
     <el-form-item label="上传详情图" prop="detailImages">
       <div
         v-if="form.detailImages"
-        style=" display: flex; flex-wrap: wrap; gap: 8px;margin-bottom: 8px"
+        style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px"
       >
-        <a
+        <span
           v-for="(url, idx) in JSON.parse(form.detailImages || '[]')"
           :key="idx"
-          style="color: #1677ff; cursor: pointer"
-          @click.prevent="openPreview(url)"
+          style="display: inline-flex; gap: 4px; align-items: center"
         >
-          详情图{{ Number(idx) + 1 }}
-        </a>
+          <a
+            style="color: #1677ff; cursor: pointer"
+            @click.prevent="openPreview(url)"
+          >
+            详情图{{ Number(idx) + 1 }}
+          </a>
+          <el-button
+            type="danger"
+            :icon="Delete"
+            circle
+            size="small"
+            @click="removeDetailImage(Number(idx))"
+          />
+        </span>
       </div>
       <el-input v-model="form.detailImages" placeholder="请上传详情图" disabled>
         <template #append>
@@ -250,7 +285,7 @@ import {
   type FormInstance,
   type FormRules
 } from "element-plus";
-import { Plus } from "@element-plus/icons-vue";
+import { Plus, Delete } from "@element-plus/icons-vue";
 import { listCategory } from "@/api/pos/category";
 import {
   getProductById,
@@ -284,7 +319,7 @@ const form = reactive({
   productName: "",
   productDesc: "",
   displayPrice: 0,
-  categoryId: 0,
+  categoryId: null,
   categoryName: "",
   mainImage: "",
   detailImages: "",
@@ -547,6 +582,8 @@ const validateSkuList = (): boolean => {
 const resetForm = (formEl: FormInstance | undefined) => {
   if (!formEl) return;
   formEl.resetFields();
+  form.specAttrList = [];
+  form.skuList = [];
 };
 
 /**
@@ -614,7 +651,7 @@ watch(
         productName: "",
         productDesc: "",
         displayPrice: 0,
-        categoryId: 0,
+        categoryId: null,
         categoryName: "",
         mainImage: "",
         detailImages: "",
@@ -800,7 +837,7 @@ const uploadImage = async (type: "image" | "detail") => {
     try {
       ElMessage.info("正在上传...");
       const res = await ossUpload(file);
-      const url = res.data;
+      const url = res.message;
 
       if (type === "image") {
         // 主图：只允许1张，直接覆盖
@@ -854,7 +891,7 @@ const uploadSkuImage = async (row: ProductSku) => {
     try {
       ElMessage.info("上传中...");
       const res = await ossUpload(file);
-      row.skuImage = res.data;
+      row.skuImage = res.message;
       ElMessage.success("上传成功");
     } catch (err) {
       console.error(err);
@@ -873,6 +910,17 @@ const openPreview = (url: string) => {
   if (!url) return;
   previewUrl.value = url;
   showViewer.value = true;
+};
+
+const removeDetailImage = (idx: number) => {
+  let list: string[] = [];
+  try {
+    list = JSON.parse(form.detailImages || "[]");
+  } catch {
+    return;
+  }
+  list.splice(idx, 1);
+  form.detailImages = list.length > 0 ? JSON.stringify(list) : "";
 };
 </script>
 

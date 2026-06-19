@@ -18,8 +18,8 @@
           clearable
           style="width: 180px"
         >
-          <el-option label="未启用" :value="0" />
-          <el-option label="正常发放" :value="1" />
+          <el-option label="未启用" :value="1" />
+          <el-option label="正常发放" :value="0" />
           <el-option label="已过期" :value="2" />
         </el-select>
       </el-form-item>
@@ -283,9 +283,9 @@ const getCouponTypeText = (type: number): string => {
 const getStatusText = (status: number): string => {
   switch (status) {
     case 0:
-      return "未启用";
-    case 1:
       return "正常发放";
+    case 1:
+      return "未启用";
     case 2:
       return "已过期";
     default:
@@ -298,9 +298,9 @@ const getStatusTagType = (
 ): "info" | "success" | "danger" | "warning" => {
   switch (status) {
     case 0:
-      return "info";
-    case 1:
       return "success";
+    case 1:
+      return "info";
     case 2:
       return "danger";
     case 3:
@@ -382,8 +382,8 @@ const handleCloseDialog = () => {
 
 // ==================== 删除 ====================
 const handleDelete = (row: CouponInfo) => {
-  if (![0, 2].includes(row.status)) {
-    ElMessageBox.alert("仅已禁用或已下架的优惠券可以删除", "提示", {
+  if (![1, 2].includes(row.status)) {
+    ElMessageBox.alert("仅【未启用】或【已过期】的优惠券可以删除", "提示", {
       confirmButtonText: "确定",
       type: "warning"
     });
@@ -405,7 +405,7 @@ const handleBatchDelete = () => {
   const selectedItems = dataList.value.filter(item =>
     selectedCodes.value.includes(item.couponCode)
   );
-  const hasInvalid = selectedItems.some(item => ![0, 2].includes(item.status));
+  const hasInvalid = selectedItems.some(item => ![1, 2].includes(item.status));
   if (hasInvalid) {
     ElMessageBox.alert(
       "选中的优惠券包含不可删除的类型！仅【未启用】或【已过期】的优惠券可以删除！",

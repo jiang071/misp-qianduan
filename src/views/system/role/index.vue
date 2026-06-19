@@ -277,11 +277,13 @@ const {
       >
         <div class="flex justify-between w-full px-3 pt-5 pb-4">
           <div class="flex">
-            <span :class="iconClass">
+            <span
+              v-tippy="{
+                content: '关闭'
+              }"
+              :class="iconClass"
+            >
               <IconifyIconOffline
-                v-tippy="{
-                  content: '关闭'
-                }"
                 class="dark:text-white"
                 width="18px"
                 height="18px"

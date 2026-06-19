@@ -38,8 +38,8 @@
           clearable
           style="width: 150px"
         >
-          <el-option label="上架" value="true" />
-          <el-option label="下架" value="false" />
+          <el-option label="上架" value="1" />
+          <el-option label="下架" value="0" />
         </el-select>
       </el-form-item>
       <el-form-item>
@@ -63,11 +63,6 @@
       <el-col :span="1.5">
         <el-button type="danger" plain icon="Delete" @click="handleDelete"
           >删除</el-button
-        >
-      </el-col>
-      <el-col v-if="categoryList.length > 0" :span="1.5">
-        <el-button type="warning" plain icon="Download" @click="handleExport"
-          >导出</el-button
         >
       </el-col>
     </el-row>
@@ -240,7 +235,7 @@
           parentCategoryNames
         }}</el-descriptions-item>
         <el-descriptions-item label="状态">{{
-          category.state ? "上架" : "下架"
+          category.state === 1 ? "上架" : "下架"
         }}</el-descriptions-item>
         <el-descriptions-item label="类别层级">{{
           category.level
@@ -292,7 +287,7 @@ interface Category {
   parentId: number;
   categoryName: string;
   categorySn: string;
-  state: boolean;
+  state: number;
   level: number;
   path: string;
   categoryDescription?: string;
@@ -374,7 +369,7 @@ const responseData = reactive<Category>({
   categoryId: undefined,
   categorySn: "",
   categoryName: "",
-  state: false,
+  state: 1,
   parentId: undefined,
   categoryDescription: "",
   level: 0,

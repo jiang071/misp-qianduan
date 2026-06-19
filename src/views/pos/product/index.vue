@@ -163,11 +163,20 @@
       @current-change="handleCurrentChange"
     />
 
-    <el-drawer v-model="drawer" title="商品信息" :with-header="false">
+    <el-drawer
+      v-model="drawer"
+      title="商品信息"
+      :with-header="false"
+      size="700px"
+    >
       <el-descriptions :title="productTitle" :column="2" border>
-        <el-descriptions-item label="商品图片">{{
-          product.mainImage
-        }}</el-descriptions-item>
+        <el-descriptions-item label="商品图片">
+          <img
+            :src="product.mainImage"
+            alt="商品图片"
+            style="width: 100px; height: 100px"
+          />
+        </el-descriptions-item>
         <el-descriptions-item label="编码">{{
           product.productSn
         }}</el-descriptions-item>
@@ -177,19 +186,62 @@
         <el-descriptions-item label="类别">{{
           product.categoryName
         }}</el-descriptions-item>
-        <el-descriptions-item label="价格">{{
+        <el-descriptions-item label="最低价格">{{
           product.displayPrice
         }}</el-descriptions-item>
-        <el-descriptions-item label="类别">{{
+        <el-descriptions-item label="类别ID">{{
           product.categoryId
         }}</el-descriptions-item>
+
+        <!-- ✅ 新增：商品状态 -->
+        <el-descriptions-item label="上架状态">
+          {{ product.productStatus === "onsale" ? "上架" : "下架" }}
+        </el-descriptions-item>
+        <el-descriptions-item label="库存状态">
+          {{ product.stockStatus === "NORMAL" ? "库存正常" : "缺货" }}
+        </el-descriptions-item>
+
         <el-descriptions-item label="描述">{{
           product.productDesc
         }}</el-descriptions-item>
       </el-descriptions>
+
+      <!-- ✅ 新增：SKU 列表 -->
+      <el-divider content-position="left">SKU 列表</el-divider>
+      <el-table
+        v-if="skus.length > 0"
+        :data="skus"
+        border
+        size="small"
+        style="width: 100%"
+      >
+        <el-table-column label="SKU 编码" prop="skuCode" min-width="130" />
+        <el-table-column label="规格组合" min-width="150">
+          <template #default="{ row }">
+            {{
+              Array.isArray(row.specCombo)
+                ? row.specCombo.join("，")
+                : row.specCombo
+            }}
+          </template>
+        </el-table-column>
+        <el-table-column label="价格" prop="skuPrice" width="100" />
+        <el-table-column label="库存" prop="skuStock" width="80" />
+        <el-table-column label="SKU图片" width="100">
+          <template #default="{ row }">
+            <img
+              v-if="row.skuImage"
+              :src="row.skuImage"
+              style="width: 50px; height: 50px; object-fit: cover"
+            />
+            <span v-else>-</span>
+          </template>
+        </el-table-column>
+      </el-table>
+      <el-empty v-else description="暂无 SKU" />
     </el-drawer>
 
-    <el-dialog v-model="dialogOpen" :title="title" width="800" append-to-body>
+    <el-dialog v-model="dialogOpen" :title="title" width="900" append-to-body>
       <product-form :product-id="selectedId" @success="handleCloseDiaglog" />
     </el-dialog>
   </div>
@@ -206,7 +258,8 @@ import {
   deleteProduct,
   deleteProductBatch,
   listAllProduct,
-  listProductByPage
+  listProductByPage,
+  getProductSkuByProductId
 } from "@/api/pos/product";
 import ProductForm from "./form.vue";
 import {
@@ -352,6 +405,7 @@ function getProductList() {
 /** ------------------数据展示区：数据选择-------------------- */
 
 const ids = ref<number[]>([]); // 表单勾选的id
+const selectedSns = ref<string[]>([]); //勾选id对应的商品编码
 const single = ref<boolean>(false); // 勾选1个
 const multiple = ref<boolean>(false); // 勾选多个
 
@@ -360,6 +414,9 @@ function handleSelectionChange(selection: Product[]) {
   ids.value = selection
     .map((item: Product) => item.productId)
     .filter(id => id !== undefined) as number[];
+  selectedSns.value = selection
+    .map((item: Product) => item.productSn)
+    .filter(sn => sn !== undefined) as string[];
   single.value = selection.length == 1;
   multiple.value = selection.length >= 1;
 }
@@ -412,8 +469,12 @@ const skus = ref<ProductSku[]>([]); // 商品规格列表
 const product = toRef(responseData);
 function handleView(row: Product) {
   if (row.productId !== undefined) {
-    getProductById(row.productId).then(response => {
-      product.value = response.data;
+    Promise.all([
+      getProductById(row.productId),
+      getProductSkuByProductId(row.productId)
+    ]).then(([productRes, skuRes]) => {
+      product.value = productRes.data;
+      skus.value = skuRes.data || [];
       productTitle.value = "查看商品数据[" + row.productId + "]";
     });
     drawer.value = true;
@@ -433,9 +494,16 @@ function handleAdd() {
 
 /** 修改按钮 */
 function handleUpdate(row: any) {
-  ElMessage.success("修改操作,勾选的数据id为:" + ids.value.join(","));
-  selectedId.value = row.productId || ids.value[0];
-  title.value = "修改商品[" + selectedId.value + "]";
+  const isEventObject = row && row instanceof MouseEvent;
+  const productId = isEventObject ? ids.value[0] : row?.productId;
+
+  if (!productId) {
+    ElMessage.warning("请先勾选要修改的商品");
+    return;
+  }
+
+  selectedId.value = productId;
+  title.value = "修改商品[" + productId + "]";
   dialogOpen.value = true;
 }
 
@@ -449,7 +517,7 @@ function handleCloseDiaglog() {
 /** ------------------数据删除操作-------------------- */
 /** 删除按钮 */
 function handleDelete(row: any) {
-  ElMessageBox.confirm("是否删除编号为" + row.productId + "的数据?", "警告")
+  ElMessageBox.confirm("是否删除商品编码为" + row.productSn + "的数据?", "警告")
     .then(() => {
       if (row.productId) {
         return deleteProduct(row.productId);
@@ -462,21 +530,16 @@ function handleDelete(row: any) {
 }
 
 /** 批量删除按钮 */
-// 正确代码：函数声明为 async
 async function handleBatchDelete() {
-  // 🔧 添加 async 关键字
   try {
-    // await 可以正常使用（ElMessageBox.confirm 返回 Promise）
     await ElMessageBox.confirm(
-      `是否删除编号为${ids.value.join(",")}的数据?`,
+      `是否删除以下编号的商品：${selectedSns.value.join("、")}？`,
       "警告"
     );
-    // 确认后执行删除
-    await deleteProductBatch(ids.value); // 若 deleteProductBatch 是异步函数，也需 await
+    await deleteProductBatch(ids.value);
     getProductList();
     ElMessage.success(`批量删除${ids.value.length}条数据成功！`);
   } catch (error) {
-    // 用户取消确认时的异常捕获（无需处理，仅关闭弹窗）
     ElMessage.info("已取消删除操作");
   }
 }

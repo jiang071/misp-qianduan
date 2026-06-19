@@ -45,9 +45,10 @@ const handleSearch = () => {
 };
 const exportData = async () => {
   try {
+    const [startDate, endDate] = dateRange.value ?? [];
     const params = {
-      startDate: dateRange.value[0],
-      endDate: dateRange.value[1]
+      startDate: startDate || "",
+      endDate: endDate || ""
     };
     const res = await exportSalesRanking(params);
     const blob = new Blob([res.data], {

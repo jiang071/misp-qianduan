@@ -63,10 +63,7 @@
               </div>
             </template>
 
-            <!-- === 新增优惠券区域 开始 === -->
-
             <el-form>
-              <!-- 1. 可用优惠券下拉选择 -->
               <el-form-item label="可用优惠券">
                 <el-select
                   v-model="selectedCouponCode"
@@ -84,7 +81,6 @@
                 </el-select>
               </el-form-item>
 
-              <!-- 2. 手动输入券码 + 确定 + 清除按钮同行 -->
               <el-form-item label="粘贴券码">
                 <div style="display: flex; gap: 8px; align-items: center">
                   <el-input
@@ -99,7 +95,6 @@
                     @click="handleSearchCodeCoupon"
                     >确定</el-button
                   >
-                  <!-- 清除按钮移到此处，文字改为清除 -->
                   <el-button
                     type="info"
                     plain
@@ -111,7 +106,6 @@
                 </div>
               </el-form-item>
 
-              <!-- 3. 原始金额 & 抵扣金额同一行布局 -->
               <el-form-item label="明细">
                 <div style="display: flex; gap: 30px; align-items: center">
                   <span>原始金额：{{ orderTotalOrigin }} 元</span>
@@ -351,9 +345,12 @@
         <el-descriptions-item label="券编码">{{
           couponDetailInfo.couponCode
         }}</el-descriptions-item>
-        <el-descriptions-item label="可抵扣金额"
-          >{{ couponDetailInfo.discount }}元</el-descriptions-item
-        >
+        <el-descriptions-item label="可抵扣金额">
+          <template v-if="couponDetailInfo.couponType === 1">
+            {{ couponDetailInfo.discount }}折
+          </template>
+          <template v-else> {{ couponDetailInfo.discount }}元 </template>
+        </el-descriptions-item>
         <el-descriptions-item label="使用门槛"
           >{{ couponDetailInfo.minAmount }}元可用</el-descriptions-item
         >
@@ -379,7 +376,7 @@
 import { ref, computed, watch } from "vue";
 import debounce from "lodash-es/debounce";
 import type { ComponentSize } from "element-plus";
-import { ElMessage } from "element-plus";
+import { ElMessage, ElMessageBox } from "element-plus";
 import {
   makeNewSale,
   deleteSaleItem,
@@ -769,12 +766,21 @@ async function handleSearchCodeCoupon() {
     return;
   }
   try {
-    // 查询优惠券完整详情
     const res = await getCouponDetailByCode(code);
+
+    if (res.code === 600) {
+      ElMessageBox.alert("您所输入的优惠券不存在", "提示", {
+        confirmButtonText: "确定",
+        type: "warning"
+      });
+      return;
+    }
+
     couponDetailInfo.value = res.data;
     couponDetailDialog.value = true;
   } catch (err) {
-    ElMessage.error("未查询到该优惠券");
+    // 网络异常等真正的 HTTP 错误
+    ElMessage.error("查询优惠券详情失败，请稍后重试");
     console.error("查询券详情失败", err);
   }
 }

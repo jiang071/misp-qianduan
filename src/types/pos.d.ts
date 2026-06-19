@@ -2,7 +2,7 @@
 export interface Category {
   categoryId?: number;
   parentId: number;
-  state: boolean;
+  state: number;
   categoryName: string;
   level: number;
   path: string;
@@ -70,7 +70,7 @@ export interface CategoryQueryParams {
   pageSize: number;
   categoryName?: string;
   categoryId?: number;
-  state?: boolean;
+  state?: number;
   parentId?: number;
   level?: number;
 }
@@ -80,7 +80,7 @@ export interface CategoryQueryParams {
   pageSize: number;
   categoryName?: string;
   categoryId?: number;
-  state?: boolean;
+  state?: number;
   parentId?: number;
   level?: number;
 }
@@ -135,7 +135,7 @@ export interface OrderQueryParams {
   pageSize: number;
   orderNo?: string;
   userId?: string;
-  orderStatus?: string;
+  orderStatus?: number;
 }
 
 export interface Order {
@@ -239,8 +239,8 @@ export const CouponTypeMap = {
 
 // 优惠券整体状态映射
 export const CouponStatusMap = {
-  0: "未启用",
-  1: "正常发放",
+  0: "正常发放",
+  1: "未启用",
   2: "已过期"
 } as const;
 
